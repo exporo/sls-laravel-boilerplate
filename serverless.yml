@@ -1,30 +1,360 @@
-service: bref-demo-laravel
+#service: exporo_sls_laravel_boilerplate
+service: exporo-sls-laravel
 
 provider:
-    name: aws
-    runtime: provided
-    environment:
-        # Laravel environment variables
-        APP_STORAGE: '/tmp'
+  name: aws
+  runtime: provided
+  region: eu-central-1
+  vpc:
+    securityGroupIds:
+    - Fn::GetAtt: ServerlessVPC.DefaultSecurityGroup
+    subnetIds:
+    - Ref: ServerlessSubnetA
+    - Ref: ServerlessSubnetB
+    - Ref: ServerlessSubnetC
+  iamRoleStatements:
+  - Effect: Allow
+    Action:
+    - sqs:SendMessage
+    - sqs:ReceiveMessage
+    Resource: !GetAtt SQSQueue.Arn
+  - Effect: Allow
+    Action:
+    - dynamodb:DescribeTable
+    - dynamodb:Query
+    - dynamodb:Scan
+    - dynamodb:GetItem
+    - dynamodb:PutItem
+    - dynamodb:UpdateItem
+    - dynamodb:DeleteItem
+    Resource:
+    - "Fn::GetAtt": [ DynamoDB, Arn ]
+  - Effect: Allow
+    Action:
+    - s3:*
+    Resource:
+    - !Join
+      - ''
+      - - "Fn::GetAtt": [ S3Bucket, Arn ]
+        - '/*'
+  - Effect: Allow
+    Action: 'secretsmanager:GetSecretValue'
+    Resource: !Ref DBSecret
+  environment:
+    # Laravel environment variables
+    APP_KEY: !Sub '{{resolve:secretsmanager:${self:custom.UUID}-APP__KEY}}'
+    APP_STORAGE: '/tmp'
+    DB_HOST:
+      Fn::GetAtt: [AuroraRDSCluster, Endpoint.Address]
+    DB_PASSWORD: !Sub '{{resolve:secretsmanager:exporo-sls-laravel-dev-DB__PASSWORD}}'
+    LOG_CHANNEL: stderr
+    SQS_REGION: ${self:provider.region}
+    VIEW_COMPILED_PATH: /tmp/storage/framework/views
+    CACHE_DRIVER: dynamodb
+    SESSION_DRIVER: dynamodb
+    QUEUE_CONNECTION: sqs
+    SQS_QUEUE: !Ref SQSQueue
+    DYNAMODB_CACHE_TABLE: !Ref DynamoDB
+    FILESYSTEM_DRIVER: s3
+    AWS_BUCKET: !Ref S3Bucket
 
-package:
-    exclude:
-        - '.git/**'
-        - 'node_modules/**'
-        - 'storage/**'
+custom:
+  OFFICE_IP: 0.0.0.0/0
+  KEY_NAME: exporo-sls-laravel
+  VPC_CIDR: 10
+  UUID: "${self:service.name}-${opt:stage, self:provider.stage}"
+  AURORA:
+    DELETE_PROTECTION: false
 
 functions:
-    website:
-        handler: public/index.php
-        timeout: 30 # in seconds (API Gateway has a timeout of 30 seconds)
-        layers:
-            - 'arn:aws:lambda:us-east-1:209497400698:layer:php-73-fpm:7'
-        events:
-            -   http: 'ANY /'
-            -   http: 'ANY {proxy+}'
-    artisan:
-        handler: artisan
-        timeout: 120 # in seconds
-        layers:
-            - 'arn:aws:lambda:us-east-1:209497400698:layer:php-73:7' # PHP
-            - 'arn:aws:lambda:us-east-1:209497400698:layer:console:7' # The "console" layer
+  website:
+    handler: application/public/index.php
+    timeout: 30
+    layers:
+    - 'arn:aws:lambda:eu-central-1:209497400698:layer:php-73-fpm:9'
+    events:
+    - http: 'ANY /'
+    - http: 'ANY {proxy+}'
+
+  artisan:
+    handler: application/artisan
+    timeout: 120
+    events:
+    - schedule:
+        rate: rate(1 minute)
+        input:
+          cli: "schedule:run >>/dev/stderr"
+    layers:
+    - 'arn:aws:lambda:eu-central-1:209497400698:layer:php-73:9' # PHP
+    - 'arn:aws:lambda:eu-central-1:209497400698:layer:console:9' # The "console" layer
+
+  queueListener:
+    handler: php/SQSBrefEvent.php
+    timeout: 120
+    events:
+    - sqs:
+        arn: !GetAtt SQSQueue.Arn
+    layers:
+    - 'arn:aws:lambda:eu-central-1:209497400698:layer:php-73:9' # PHP
+
+#AWS Resources
+resources:
+  Resources:
+    #Laravel Application Key
+    AppKey:
+      Type: AWS::SecretsManager::Secret
+      Properties:
+        Name: ${self:custom.UUID}-APP__KEY
+        GenerateSecretString:
+          IncludeSpace: false
+          PasswordLength: 32
+          ExcludeCharacters: '"@/\'
+
+    #SQS queue
+    SQSQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        VisibilityTimeout: 120
+        QueueName: '#{AWS::StackName}-${opt:stage, self:provider.stage}'
+
+    #Aurora MySql 5.6 serverless DB
+    AuroraSubnetGroup:
+      Type: AWS::RDS::DBSubnetGroup
+      Properties:
+        DBSubnetGroupDescription: "Aurora Subnet Group"
+        Tags:
+        - Key: Name
+          Value: "#{AWS::StackName}-${opt:stage, self:provider.stage}"
+        SubnetIds:
+        - Ref: ServerlessSubnetA
+        - Ref: ServerlessSubnetB
+        - Ref: ServerlessSubnetC
+
+    DBSecret:
+      Type: AWS::SecretsManager::Secret
+      Properties:
+        Name: ${self:custom.UUID}-DB__PASSWORD
+        GenerateSecretString:
+          PasswordLength: 30
+          ExcludeCharacters: '"@/\'
+
+    AuroraRDSCluster:
+      DependsOn: DBSecret
+      Type: "AWS::RDS::DBCluster"
+      Properties:
+        MasterUsername: forge
+        MasterUserPassword: !Sub '{{resolve:secretsmanager:exporo-sls-laravel-dev-DB__PASSWORD}}'
+        DBSubnetGroupName:
+          Ref: AuroraSubnetGroup
+        Engine: aurora
+        EngineMode: serverless
+        EngineVersion: "5.6"
+        DeletionProtection: ${self:custom.AURORA.DELETE_PROTECTION}
+        DatabaseName: forge
+        BackupRetentionPeriod: 30
+        VpcSecurityGroupIds:
+        - Fn::GetAtt: ServerlessVPC.DefaultSecurityGroup
+        Tags:
+        - Key: Name
+          Value: "#{AWS::StackName}-${opt:stage, self:provider.stage}"
+
+    #DynamoDB Cache
+    DynamoDB:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: cache
+        AttributeDefinitions:
+        - AttributeName: key
+          AttributeType: S
+        KeySchema:
+        - AttributeName: key
+          KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
+
+    #Bastion host for accessing DB
+    BastionHost:
+      Type: AWS::EC2::Instance
+      Properties:
+        DisableApiTermination: false
+        KeyName: ${self:custom.KEY_NAME}
+        ImageId: ami-e2526d09
+        InstanceType: t2.nano
+        Monitoring: false
+        UserData: !Base64 'yum install mysql --assumeyes'
+        Tags:
+        - Key: Name
+          Value: "#{AWS::StackName}-${opt:stage, self:provider.stage}"
+        NetworkInterfaces:
+        - SubnetId:
+            Ref: ServerlessSubnetA
+          AssociatePublicIpAddress: 'true'
+          DeviceIndex: '0'
+          GroupSet:
+          - Fn::GetAtt: ServerlessVPC.DefaultSecurityGroup
+
+    #S3 Bucket
+    S3Bucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: "#{AWS::StackName}-${opt:stage, self:provider.stage}"
+        MetricsConfigurations:
+        - Id: EntireBucket
+
+    # VPC config
+    ServerlessVPC:
+      Type: AWS::EC2::VPC
+      Properties:
+        CidrBlock: ${self:custom.VPC_CIDR}.0.0.0/16
+        EnableDnsSupport: true
+        EnableDnsHostnames: true
+        InstanceTenancy: default
+        Tags:
+        - Key: Name
+          Value: "#{AWS::StackName}-${opt:stage, self:provider.stage}"
+
+    ServerlessDefaultSG:
+      Type: AWS::EC2::SecurityGroupIngress
+      Properties:
+        GroupId:
+          Fn::GetAtt:
+          - ServerlessVPC
+          - DefaultSecurityGroup
+        IpProtocol: tcp
+        FromPort: '22'
+        ToPort: '22'
+        CidrIp: ${self:custom.OFFICE_IP}
+
+    ServerlessSubnetA:
+      DependsOn: ServerlessVPC
+      Type: AWS::EC2::Subnet
+      Properties:
+        VpcId:
+          Ref: ServerlessVPC
+        AvailabilityZone: ${self:provider.region}a
+        CidrBlock: ${self:custom.VPC_CIDR}.0.0.0/24
+        Tags:
+        - Key: Name
+          Value: "#{AWS::StackName}-${opt:stage, self:provider.stage}"
+    ServerlessSubnetB:
+      DependsOn: ServerlessVPC
+      Type: AWS::EC2::Subnet
+      Properties:
+        VpcId:
+          Ref: ServerlessVPC
+        AvailabilityZone: ${self:provider.region}b
+        CidrBlock: ${self:custom.VPC_CIDR}.0.1.0/24
+        Tags:
+        - Key: Name
+          Value: "#{AWS::StackName}-${opt:stage, self:provider.stage}"
+    ServerlessSubnetC:
+      DependsOn: ServerlessVPC
+      Type: AWS::EC2::Subnet
+      Properties:
+        VpcId:
+          Ref: ServerlessVPC
+        AvailabilityZone: ${self:provider.region}c
+        CidrBlock: ${self:custom.VPC_CIDR}.0.2.0/24
+        Tags:
+        - Key: Name
+          Value: "#{AWS::StackName}-${opt:stage, self:provider.stage}"
+
+    DynamoDBEndpoint:
+      Type: "AWS::EC2::VPCEndpoint"
+      Properties:
+        RouteTableIds:
+        - !Ref ServerlessRTB
+        ServiceName:
+          !Sub "com.amazonaws.#{AWS::Region}.dynamodb"
+        VpcId: !Ref ServerlessVPC
+
+    S3Endpoint:
+      Type: "AWS::EC2::VPCEndpoint"
+      Properties:
+        RouteTableIds:
+        - !Ref ServerlessRTB
+        ServiceName:
+          !Sub "com.amazonaws.#{AWS::Region}.s3"
+        VpcId: !Ref ServerlessVPC
+
+    SQSEndpoint:
+      Type: "AWS::EC2::VPCEndpoint"
+      Properties:
+        VpcEndpointType: Interface
+        PrivateDnsEnabled: true
+        SubnetIds:
+        - Ref: ServerlessSubnetA
+        - Ref: ServerlessSubnetB
+        - Ref: ServerlessSubnetC
+        SecurityGroupIds:
+        - Fn::GetAtt: ServerlessVPC.DefaultSecurityGroup
+        ServiceName:
+          !Sub "com.amazonaws.#{AWS::Region}.sqs"
+        VpcId: !Ref ServerlessVPC
+
+    ServerlessIGW:
+      Type: AWS::EC2::InternetGateway
+      Properties:
+        Tags:
+        - Key: Name
+          Value: "#{AWS::StackName}-${opt:stage, self:provider.stage}"
+
+    ServerlessGatewayAttachment:
+      Type: AWS::EC2::VPCGatewayAttachment
+      Properties:
+        VpcId:
+          Ref: ServerlessVPC
+        InternetGatewayId:
+          Ref: ServerlessIGW
+
+    ServerlessRTB:
+      Type: AWS::EC2::RouteTable
+      Properties:
+        VpcId:
+          Ref: ServerlessVPC
+        Tags:
+        - Key: Name
+          Value: "#{AWS::StackName}-${opt:stage, self:provider.stage}"
+
+    ServerlessRoute:
+      Type: AWS::EC2::Route
+      Properties:
+        DestinationCidrBlock: 0.0.0.0/0
+        GatewayId:
+          Ref: ServerlessIGW
+        RouteTableId:
+          Ref: ServerlessRTB
+
+    ServerlessSubnetRTAA:
+      Type: AWS::EC2::SubnetRouteTableAssociation
+      Properties:
+        RouteTableId:
+          Ref: ServerlessRTB
+        SubnetId:
+          Ref: ServerlessSubnetA
+
+    ServerlessSubnetRTAB:
+      Type: AWS::EC2::SubnetRouteTableAssociation
+      Properties:
+        RouteTableId:
+          Ref: ServerlessRTB
+        SubnetId:
+          Ref: ServerlessSubnetB
+
+    ServerlessSubnetRTAC:
+      Type: AWS::EC2::SubnetRouteTableAssociation
+      Properties:
+        RouteTableId:
+          Ref: ServerlessRTB
+        SubnetId:
+          Ref: ServerlessSubnetC
+
+package:
+  exclude:
+  - '.git/**'
+  - 'node_modules/**'
+  - 'docker/**'
+  - 'application/node_modules/**'
+  - 'application/.env'
+
+plugins:
+- serverless-pseudo-parameters

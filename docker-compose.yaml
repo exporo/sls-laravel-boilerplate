@@ -1,0 +1,30 @@
+version: '3.2'
+
+services:
+
+  webapp:
+    build: .
+    volumes:
+    - ./application:/var/www/html:delegated
+    ports:
+    - 80:8080
+    depends_on:
+    - mysql
+    - redis
+
+  mysql:
+    image: mysql:5.7.23
+    environment:
+      MYSQL_DATABASE: forge
+      MYSQL_USER: homestead
+      MYSQL_PASSWORD: secret
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+    - ./docker/data/mysql/:/var/lib/mysql
+    ports:
+    - 3306:3306
+
+  redis:
+    image: redis:4.0.11-alpine
+    volumes:
+    - ./application/data/redis:/data
