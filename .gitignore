@@ -4,6 +4,7 @@
 /.serverless
 composer.lock
 package-lock.json
+/docker/data
 
 application/node_modules
 application/vendor
