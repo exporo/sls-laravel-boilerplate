@@ -14,7 +14,7 @@
 ## Summary
 <a name="summary"/>
 
-We are currently developing a boilerplate for hosting a typical Laravel application serverless  in the AWS Cloud. Therefore we have combined the serverless.com framework, the bref AWS Lambda layers and some AWS Cloudformation scripts. All AWS resources were written as Infrastructure as a Code and being used natively without touching any passwords and secret by hand.
+We are currently developing a boilerplate for hosting a typical Laravel application serverless  in the AWS Cloud. Therefore we have combined the serverless.com framework, the bref AWS Lambda layers and some AWS Cloudformation scripts. All AWS resources were written as Infrastructure as a Code and being used natively without touching any passwords and secret by hand. If you want to know more why we're not betting on Taylor Otwell's Vapor, [read on here](https://tech.exporo.de/blog/coming-soon).
 
 All resources are defined as a cloudformation template in the serverless.yml file: 
 ```yml
@@ -43,9 +43,9 @@ All resources are defined as a cloudformation template in the serverless.yml fil
 * AWS Lambda event for triggering the cron jobs
 * AWS SQS + Lambda Event for queueing processes
 
-All resources were paid in a pay as u go model.
+All resources were paid in a pay as you go model.
 
-Because all resources were private and hosted in a VPC a EC2 instance is placed as a bastion host. The instance type is xxx and costs about 6 € per month. 
+Since all resources were private and hosted in a VPC, an EC2 instance is placed as a bastion host. The instance type is t2.nano and costs about 6 € per month. 
 
 ## Requirements
 <a name="requirements"/>
@@ -88,16 +88,16 @@ exporo_sls:~$ docker-compose exec webapp bash
 ## Demo application
 <a name="demo"/>
 
-This demo application implements different page counters, which uses different AWS techniques(DB, Cache, Filesystem) to store the hits.
-The homecontroller only reads the hits from the resources and triggers and event, which uses a SQS Queue to store the hits asynchronously.
-A cron job resets all page counter hourly.
+This demo application implements various page counters that use different AWS techniques (DB, Cache, Filesystem) to store hits.
+The home controller only reads the hits from the resources and triggers an event that stores the hits asynchronously using an SQS queue.
+A cron job resets all page counters hourly.
 
 
 ## Migrate your application
 <a name="migration"/>
 
-Empty the application folder and insert your laravel application.
-Nearly all configuration is done in the serverless.yml, but u have to make some small changes to your laravel application:
+Empty the application folder and insert your Laravel application.
+Almost all configurations are done in serverless.yml, but you will need to make some minor changes to your Laravel application:
 
 ##### 1: Add composer dependencies to your project
 
@@ -155,6 +155,6 @@ if (! is_dir(config('view.compiled'))) {
 ## Credits
 <a name="credits"/>
    
-Thanks to  
-Taylor Otwell  
-https://medium.com/no-deploys-on-friday/migration-guide-serverless-bref-laravel-fbb513b4c54b
+* A big thank you goes to Tylor Otwell, who with his framework Laravel and services like [Vapor](https://vapor.laravel.com/) manages to give free rein to technological creativity.  
+* The creators of the php lambda layers called (bref)[https://bref.sh/docs/]
+* This post [Migration Guide: Serverless + Bref + Laravel](https://medium.com/no-deploys-on-friday/migration-guide-serverless-bref-laravel-fbb513b4c54b) by Thiago Marini
