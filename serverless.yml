@@ -42,11 +42,11 @@ provider:
     Resource: !Ref DBSecret
   environment:
     # Laravel environment variables
-    APP_KEY: !Sub '{{resolve:secretsmanager:${self:custom.UUID}-APP__KEY}}'
+    APP_KEY: !Sub '{{resolve:secretsmanager:${self:custom.UUID}-APP_KEY}}'
     APP_STORAGE: '/tmp'
     DB_HOST:
       Fn::GetAtt: [AuroraRDSCluster, Endpoint.Address]
-    DB_PASSWORD: !Sub '{{resolve:secretsmanager:exporo-sls-laravel-dev-DB__PASSWORD}}'
+    DB_PASSWORD: !Sub '{{resolve:secretsmanager:exporo-sls-laravel-dev-DB_PASSWORD}}'
     LOG_CHANNEL: stderr
     SQS_REGION: ${self:provider.region}
     VIEW_COMPILED_PATH: /tmp/storage/framework/views
@@ -104,7 +104,7 @@ resources:
     AppKey:
       Type: AWS::SecretsManager::Secret
       Properties:
-        Name: ${self:custom.UUID}-APP__KEY
+        Name: ${self:custom.UUID}-APP_KEY
         GenerateSecretString:
           IncludeSpace: false
           PasswordLength: 32
@@ -133,7 +133,7 @@ resources:
     DBSecret:
       Type: AWS::SecretsManager::Secret
       Properties:
-        Name: ${self:custom.UUID}-DB__PASSWORD
+        Name: ${self:custom.UUID}-DB_PASSWORD
         GenerateSecretString:
           PasswordLength: 30
           ExcludeCharacters: '"@/\'
@@ -143,7 +143,7 @@ resources:
       Type: "AWS::RDS::DBCluster"
       Properties:
         MasterUsername: forge
-        MasterUserPassword: !Sub '{{resolve:secretsmanager:exporo-sls-laravel-dev-DB__PASSWORD}}'
+        MasterUserPassword: !Sub '{{resolve:secretsmanager:exporo-sls-laravel-dev-DB_PASSWORD}}'
         DBSubnetGroupName:
           Ref: AuroraSubnetGroup
         Engine: aurora
