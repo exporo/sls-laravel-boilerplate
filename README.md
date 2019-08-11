@@ -1,68 +1,98 @@
 # Serverless Laravel Boilerplate   
-sdf
 
-----
-We have developed 
-
----
-
-
-
-- dynamoDB as session driver
-- dynamoDB as cache driver
-- sqs as queue
-- sqs is triggeres a lambda function, whichs executes the message
-- s3 as storage provider
-- rds aurora serverless mysql 5.6 as database
-- schedule:run is triggered every minute
-- no warm up time, because of the minutely schedule events
-- all resources a deployed within a VPC
-- rds can be accessed via a deployed bastion host
-- all cloud resources are used natively with iam policies 
+##### Table of Contents  
+[Summary](#summary)  
+[Requirements](#requirements)  
+[Installation](#installation)  
+[Deployment](#deployment)  
+[Local development](#local)  
+[Migrate your application](#migration)  
+[Credits](#credits)  
 
 
-- only the bastion host costs around 6$ a month
 
-## AWS A prerequisites
+<a name="summary"/>
+## Summary
+
+We are currently developing a boilerplate for hosting a typical Laravel application serverless  in the AWS Cloud. Therefore we have combined the serverless.com framework, the bref AWS Lambda layers and some AWS Cloudformation scripts. All AWS resources were written as Infrastructure as a Code and being used natively without touching any passwords and secret by hand.
+
+Session driver
+Cache driver
+Database
+Storage
+Cron
+Queue Listener
+
+All resources were paid in a pay as u go model.
+
+Because all resources were private and hosted in a VPC a EC2 instance is placed as a bastion host. The instance type is xxx and costs about 6 € per month.
+
+<a name="requirements"/>
+## Requirements
+
+
+<a name="installation"/>
+## Installation
+
 - create a aws web console > ec2 > keypair with the name exporo-slsl-laravel
 
-$aws configure   
-$npm install -g serverless   
-$npm install  
-$composer install   
-$application/composer install  
-php artisan config:clear
-$serverless deploy --stage {stage}  
-$serverless invoke -f artisan --data '{"cli":"migrate --force"}' --stage {stage}    
+```console
+exporo_sls:~$ aws configure   
+exporo_sls:~$ npm install -g serverless   
+exporo_sls:~$ npm install  
+exporo_sls:~$ composer install   
+exporo_sls:~$ application/composer install  
+```
 
-## Local deployment
+<a name="deployment"/>
+## Deployment
 
-$docker-compose up -d
-$docker-compose exec webapp bash
+```console
+exporo_sls:~$ php artisan config:clear
+exporo_sls:~$ serverless deploy --stage {stage} --aws-profile default
+exporo_sls:~$ $serverless invoke -f artisan --data '{"cli":"migrate --force"}' --stage {stage} --aws-profile default
+```
 
-### TODO
-- use bref inside of the docker env? 
-- add db password rotation rotation 
+<a name="local"/>
+## Local development
+
+```console
+exporo_sls:~$ docker-compose up -d
+exporo_sls:~$ docker-compose exec webapp bash
+```
+
+<a name="demo"/>
+## Demo application
 
 
-## Demo application 
+<a name="migration"/>
+## Migrate your application
 
-## Prepare own laravel application 
+##### 1
+```console
+exporo_sls:~$ application/composer require league/flysystem-aws-s3-v3
+exporo_sls:~$ application/composer require bref/bref "^0.5"
+```
 
-* composer require bref/bref
+##### 2
+Add this line to **bootstrap/app.php**
+...
+
+```php
+$app->useStoragePath($_ENV['APP_STORAGE'] ?? $app->storagePath());
+...
 
 
-### 
+##### 3
+Remove key and secret env vars from:
+- dynamodb in config/cache.php
+- sqs in config/queue.ph
+- s3 in config/filesystems.php
 
-- run composer require league/flysystem-aws-s3-v3  
-- run composer require bref/bref "^0.5"
 
-- add this line to bootstrap/app.php:  
- *$app->useStoragePath($_ENV['APP_STORAGE'] ?? $app->storagePath());*
-
-### config/cache.php:
-remove key and secret
-
+For example config/cache.php:
+...
+```php
 'dynamodb' => [
             'driver' => 'dynamodb',
             'key' => '',
@@ -71,42 +101,29 @@ remove key and secret
             'table' => env('DYNAMODB_CACHE_TABLE', 'cache'),
             'endpoint' => env('DYNAMODB_ENDPOINT'),
         ],
-
-### config/cache.php:
-remove key and secret
-
-'sqs' => [
-            'driver' => 'sqs',
-            'key' => '',
-            'secret' => '',
-            'prefix' => env('SQS_PREFIX', 'https://sqs.us-east-1.amazonaws.com/your-account-id'),
-            'queue' => env('SQS_QUEUE', 'your-queue-name'),
-            'region' => env('SQS_REGION', 'us-east-1'),
-        ],
-
-### config/filesystems.php:
-remove key and secret
- 's3' => [
-            'driver' => 's3',
-            'key' => '',
-            'secret' => '',
-            'region' => env('AWS_DEFAULT_REGION'),
-            'region' => env('SQS_REGION'),
-            'bucket' => env('AWS_BUCKET'),
-            'url' => env('AWS_URL'),
-        ],
-        
+...
 
 
-Add this to the boot method in app/Providers/AppServiceProvider.php:
+##### 4
+Add this to the boot method in **app/Providers/AppServiceProvider.php**:
 
+...
+```php
 if (! is_dir(config('view.compiled'))) {
     mkdir(config('view.compiled'), 0755, true);
 }
+...
    
-- no application/.env file should be exists in the repository
-        
----        
+
+<a name="todo"/>
+## Todo
+
+- use bref inside of the docker env? 
+- add db password rotation rotation  ??
+
+<a name="credits"/>
+## Credits
+   
 Thanks to  
 Taylor Otwell  
 https://medium.com/no-deploys-on-friday/migration-guide-serverless-bref-laravel-fbb513b4c54b
