@@ -1,4 +1,12 @@
-# Serverless Laravel Boilerplate 
+# Serverless Laravel Boilerplate   
+sdf
+
+----
+We have developed 
+
+---
+
+
 
 - dynamoDB as session driver
 - dynamoDB as cache driver
@@ -23,6 +31,7 @@ $npm install -g serverless
 $npm install  
 $composer install   
 $application/composer install  
+php artisan config:clear
 $serverless deploy --stage {stage}  
 $serverless invoke -f artisan --data '{"cli":"migrate --force"}' --stage {stage}    
 
@@ -43,10 +52,13 @@ $docker-compose exec webapp bash
 * composer require bref/bref
 
 
-### bootstrap/app.php
+### 
 
-add this line:
-$app->useStoragePath($_ENV['APP_STORAGE'] ?? $app->storagePath());
+- run composer require league/flysystem-aws-s3-v3  
+- run composer require bref/bref "^0.5"
+
+- add this line to bootstrap/app.php:  
+ *$app->useStoragePath($_ENV['APP_STORAGE'] ?? $app->storagePath());*
 
 ### config/cache.php:
 remove key and secret
@@ -84,6 +96,17 @@ remove key and secret
             'url' => env('AWS_URL'),
         ],
         
+
+
+Add this to the boot method in app/Providers/AppServiceProvider.php:
+
+if (! is_dir(config('view.compiled'))) {
+    mkdir(config('view.compiled'), 0755, true);
+}
+   
+- no application/.env file should be exists in the repository
         
-Thanks to
+---        
+Thanks to  
+Taylor Otwell  
 https://medium.com/no-deploys-on-friday/migration-guide-serverless-bref-laravel-fbb513b4c54b

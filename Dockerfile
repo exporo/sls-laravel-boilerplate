@@ -6,7 +6,6 @@ RUN apk -v --update --no-cache add openssh mysql-client zip curl tar && \
 COPY ./docker/manifest/ /
 RUN chmod 755 /entrypoint.sh
 ADD ./application/ /var/www/html
-RUN crontab /var/www/html/config/crons/app.cron
 RUN chmod -R 777 /var/www/html/
 
 WORKDIR /var/www/html
