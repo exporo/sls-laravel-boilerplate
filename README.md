@@ -52,6 +52,8 @@ Since all resources were private and hosted in a VPC, an EC2 instance is placed 
 
 * Node.js 6.x or later
 * PHP 7.2 or later
+* AWS CLI
+* Serverless Framework
 * An AWS Account 
 
 ## Installation
