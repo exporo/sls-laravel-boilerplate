@@ -15,16 +15,6 @@
 
 We are currently developing a boilerplate for hosting a typical Laravel application serverless  in the AWS Cloud. Therefore we have combined the serverless.com framework, the bref AWS Lambda layers and some AWS Cloudformation scripts. All AWS resources were written as Infrastructure as a Code and being used natively without touching any passwords and secret by hand.
 
-* AWS DynamoDB as  a Session driver
-* AWS DynamoDB as a Cache driver
-* AWS RDS Aurora serverless MySQL 5.6 as a Database
-* AWS S3 as a Storage provider
-* AWS Lambda event for triggering the cron jobs
-* AWS SQS + Lambda Event for queueing processes
-* AWS Cloudwatch Lambda events for keeping the functions warm
-
-All resources were paid in a pay as u go model.
-
 All resources are defined as a cloudformation template in the serverless.yml file: 
 ```yml
  environment:
@@ -45,6 +35,16 @@ All resources are defined as a cloudformation template in the serverless.yml fil
     FILESYSTEM_DRIVER: s3
     AWS_BUCKET: !Ref S3Bucket
 ```
+
+* AWS DynamoDB as  a Session driver
+* AWS DynamoDB as a Cache driver
+* AWS RDS Aurora serverless MySQL 5.6 as a Database
+* AWS S3 as a Storage provider
+* AWS Lambda event for triggering the cron jobs
+* AWS SQS + Lambda Event for queueing processes
+* AWS Cloudwatch Lambda events for keeping the functions warm
+
+All resources were paid in a pay as u go model.
 
 Because all resources were private and hosted in a VPC a EC2 instance is placed as a bastion host. The instance type is xxx and costs about 6 € per month. 
 
