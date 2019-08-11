@@ -105,12 +105,16 @@ exporo_sls:~$ docker-compose exec webapp bash
 ## Demo application
 <a name="demo"/>
 
-This demo application implements different page counters, which uses a SQS Queue to store the hits asynchronously.
+This demo application implements different page counters, which uses different AWS techniques(DB, Cache, Filesystem) to store the hits.
+The homecontroller only reads the hits from the resources and triggers and event, which uses a SQS Queue to store the hits asynchronously.
 A cron job resets all page counter hourly.
 
 
 ## Migrate your application
 <a name="migration"/>
+
+Empty the application folder and insert your laravel application.
+Nearly all configuration is done in the serverless.yml, but u have to make some small changes to your laravel application:
 
 ##### 1: Add composer dependencies to your project
 
