@@ -154,7 +154,7 @@ if (! is_dir(config('view.compiled'))) {
 
 ## Credits
 <a name="credits"/>
-   
-* A big thank you goes to Tylor Otwell, who with his framework Laravel and services like [Vapor](https://vapor.laravel.com/) manages to give free rein to technological creativity.  
-* The creators of the php lambda layers called (bref)[https://bref.sh/docs/]
+  
+* A big thank you goes to Tylor Otwell, who with his framework Laravel and services such as [Vapor](https://vapor.laravel.com/) manages to let us let our technological creativity run free.    
+* The creators of the php lambda layers called [bref](https://bref.sh/docs/)
 * This post [Migration Guide: Serverless + Bref + Laravel](https://medium.com/no-deploys-on-friday/migration-guide-serverless-bref-laravel-fbb513b4c54b) by Thiago Marini
