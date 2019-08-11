@@ -15,7 +15,26 @@
 
 We are currently developing a boilerplate for hosting a typical Laravel application serverless  in the AWS Cloud. Therefore we have combined the serverless.com framework, the bref AWS Lambda layers and some AWS Cloudformation scripts. All AWS resources were written as Infrastructure as a Code and being used natively without touching any passwords and secret by hand.
 
-All resources are defined as a cloudformation template in the serverless.yml file. 
+All resources are defined as a cloudformation template in the serverless.yml file: 
+```yml
+ environment:
+    # Laravel environment variables
+    APP_KEY: !Sub '{{resolve:secretsmanager:${self:custom.UUID}-APP__KEY}}'
+    APP_STORAGE: '/tmp'
+    DB_HOST:
+      Fn::GetAtt: [AuroraRDSCluster, Endpoint.Address]
+    DB_PASSWORD: !Sub '{{resolve:secretsmanager:exporo-sls-laravel-dev-DB__PASSWORD}}'
+    LOG_CHANNEL: stderr
+    SQS_REGION: ${self:provider.region}
+    VIEW_COMPILED_PATH: /tmp/storage/framework/views
+    CACHE_DRIVER: dynamodb
+    SESSION_DRIVER: dynamodb
+    QUEUE_CONNECTION: sqs
+    SQS_QUEUE: !Ref SQSQueue
+    DYNAMODB_CACHE_TABLE: !Ref DynamoDB
+    FILESYSTEM_DRIVER: s3
+    AWS_BUCKET: !Ref S3Bucket
+```
 
 * AWS DynamoDB as  a Session driver
 * AWS DynamoDB as a Cache driver
