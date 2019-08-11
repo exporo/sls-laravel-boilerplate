@@ -1,4 +1,4 @@
-# Serverless Laravel Boilerplate   
+# Exporo Serverless Laravel Boilerplate   
 
 ##### Table of Contents  
 [Summary](#summary)  
@@ -15,16 +15,35 @@
 
 We are currently developing a boilerplate for hosting a typical Laravel application serverless  in the AWS Cloud. Therefore we have combined the serverless.com framework, the bref AWS Lambda layers and some AWS Cloudformation scripts. All AWS resources were written as Infrastructure as a Code and being used natively without touching any passwords and secret by hand.
 
-Session driver
-Cache driver
-Database
-Storage
-Cron
-Queue Listener
+All resources are defined as a cloudformation template in the serverless.yml file. 
+
+* AWS DynamoDB as  a Session driver
+* AWS DynamoDB as a Cache driver
+* AWS RDS Aurora serverless MySQL 5.6 as a Database
+* AWS S3 as a Storage provider
+* AWS Lambda event for triggering the cron jobs
+* AWS SQS + Lambda Event for queueing processes
+* AWS Cloudwatch Lambda events for keeping the functions warm
 
 All resources were paid in a pay as u go model.
 
-Because all resources were private and hosted in a VPC a EC2 instance is placed as a bastion host. The instance type is xxx and costs about 6 € per month.
+Because all resources were private and hosted in a VPC a EC2 instance is placed as a bastion host. The instance type is xxx and costs about 6 € per month. 
+
+Because of the warum up time for the Lambda functions and the Aurora serverless DB we have configured a AWS Cloudwatch event, which is invoking the website lambda function every 4 minute:
+
+```yml
+functions:
+  website:
+    handler: application/public/index.php
+    timeout: 30
+    layers:
+    - 'arn:aws:lambda:eu-central-1:209497400698:layer:php-73-fpm:9'
+    events:
+    - http: 'ANY /'
+    - http: 'ANY {proxy+}'
+    - schedule:
+        rate: rate(4 minutes)
+```
 
 ## Requirements
 <a name="requirements"/>
@@ -36,7 +55,7 @@ Because all resources were private and hosted in a VPC a EC2 instance is placed 
 ## Installation
 <a name="installation"/>
 
-* Create a  keypair with the name *exporo-slsl-laravel* in your AWS account. (AWS Web Console > EC2 > KEYPAIR)
+* Create a  keypair with the name *exporo-sls-laravel* in your AWS account. (AWS Web Console > EC2 > KEYPAIR)
 
 
 ```console

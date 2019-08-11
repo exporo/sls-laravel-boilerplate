@@ -75,6 +75,8 @@ functions:
     events:
     - http: 'ANY /'
     - http: 'ANY {proxy+}'
+    - schedule:
+        rate: rate(4 minutes)
 
   artisan:
     handler: application/artisan
