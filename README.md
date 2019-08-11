@@ -19,7 +19,6 @@ We are currently developing a boilerplate for hosting a typical Laravel applicat
 All resources are defined as a cloudformation template in the serverless.yml file: 
 ```yml
  environment:
-    # Laravel environment variables
     APP_KEY: !Sub '{{resolve:secretsmanager:${self:custom.UUID}-APP__KEY}}'
     APP_STORAGE: '/tmp'
     DB_HOST:
