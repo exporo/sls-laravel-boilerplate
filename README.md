@@ -6,6 +6,7 @@
 [Installation](#installation)  
 [Deployment](#deployment)  
 [Local development](#local)  
+[Demo application](#demo)  
 [Migrate your application](#migration)  
 [Credits](#credits)  
 
