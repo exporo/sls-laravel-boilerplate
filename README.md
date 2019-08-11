@@ -29,12 +29,15 @@ Because all resources were private and hosted in a VPC a EC2 instance is placed 
 ## Requirements
 <a name="requirements"/>
 
-lorem ipsum
+* Node.js 6.x or later
+* PHP 7.2 or later
+* An AWS Account 
 
 ## Installation
 <a name="installation"/>
 
-- create a aws web console > ec2 > keypair with the name exporo-slsl-laravel
+* Create a  keypair with the name *exporo-slsl-laravel* in your AWS account. (AWS Web Console > EC2 > KEYPAIR)
+
 
 ```console
 exporo_sls:~$ aws configure   
@@ -64,36 +67,37 @@ exporo_sls:~$ docker-compose exec webapp bash
 ## Demo application
 <a name="demo"/>
 
-lorem ipsum
+This demo application implements different page counters, which uses a SQS Queue to store the hits asynchronously.
+A cron job resets all page counter hourly.
+
 
 ## Migrate your application
 <a name="migration"/>
 
-##### 1 Add composer dependencies to your project
-...
+##### 1: Add composer dependencies to your project
+
 ```console
 exporo_sls:~$ application/composer require league/flysystem-aws-s3-v3
 exporo_sls:~$ application/composer require bref/bref "^0.5"
 ```
 
-##### 2 Make storage path configurable
+##### 2: Make storage path configurable
 Add this line to **bootstrap/app.php**
-...
+
 
 ```php
 $app->useStoragePath($_ENV['APP_STORAGE'] ?? $app->storagePath());
-...
+```
 
 
-##### 3 Removing error-causing env variables
-Remove key and secret env vars from:
+##### 3: Removing error-causing env variables
+Replace key and secret env vars with '' in:
 - dynamodb in config/cache.php
 - sqs in config/queue.ph
 - s3 in config/filesystems.php
 
 
-For example config/cache.php:
-...
+For example dynamodb in config/cache.php:
 ```php
 'dynamodb' => [
             'driver' => 'dynamodb',
@@ -103,18 +107,17 @@ For example config/cache.php:
             'table' => env('DYNAMODB_CACHE_TABLE', 'cache'),
             'endpoint' => env('DYNAMODB_ENDPOINT'),
         ],
-...
+```
 
 
-##### 4 Create a temporary directory
+##### 4: Create a temporary directory
 Add this to the boot method in **app/Providers/AppServiceProvider.php**:
 
-...
 ```php
 if (! is_dir(config('view.compiled'))) {
     mkdir(config('view.compiled'), 0755, true);
 }
-...
+```
    
 
 ## Todo

@@ -80,8 +80,8 @@
         </div>
         <hr>
         <div class="text-left ">
-            Different page counter implementations, which uses a SQS Queue to store the hits asynchronously.<br>
-            All AWS resources are serverless and used "cloud native", without passing any secret and access keys to the application.
+            This demo application implements 3 different page counters, which uses a SQS Queue to store the hits asynchronously.<br>
+            A cron job resets all page counters hourly.
         </div>
         <table style="width:50%">
             <tbody>
