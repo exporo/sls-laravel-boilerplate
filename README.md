@@ -10,9 +10,8 @@
 [Credits](#credits)  
 
 
-
-<a name="summary"/>
 ## Summary
+<a name="summary"/>
 
 We are currently developing a boilerplate for hosting a typical Laravel application serverless  in the AWS Cloud. Therefore we have combined the serverless.com framework, the bref AWS Lambda layers and some AWS Cloudformation scripts. All AWS resources were written as Infrastructure as a Code and being used natively without touching any passwords and secret by hand.
 
@@ -27,12 +26,13 @@ All resources were paid in a pay as u go model.
 
 Because all resources were private and hosted in a VPC a EC2 instance is placed as a bastion host. The instance type is xxx and costs about 6 € per month.
 
-<a name="requirements"/>
 ## Requirements
+<a name="requirements"/>
 
+lorem ipsum
 
-<a name="installation"/>
 ## Installation
+<a name="installation"/>
 
 - create a aws web console > ec2 > keypair with the name exporo-slsl-laravel
 
@@ -44,8 +44,8 @@ exporo_sls:~$ composer install
 exporo_sls:~$ application/composer install  
 ```
 
-<a name="deployment"/>
 ## Deployment
+<a name="deployment"/>
 
 ```console
 exporo_sls:~$ php artisan config:clear
@@ -53,28 +53,30 @@ exporo_sls:~$ serverless deploy --stage {stage} --aws-profile default
 exporo_sls:~$ $serverless invoke -f artisan --data '{"cli":"migrate --force"}' --stage {stage} --aws-profile default
 ```
 
-<a name="local"/>
 ## Local development
+<a name="local"/>
 
 ```console
 exporo_sls:~$ docker-compose up -d
 exporo_sls:~$ docker-compose exec webapp bash
 ```
 
-<a name="demo"/>
 ## Demo application
+<a name="demo"/>
 
+lorem ipsum
 
-<a name="migration"/>
 ## Migrate your application
+<a name="migration"/>
 
-##### 1
+##### 1 Add composer dependencies to your project
+...
 ```console
 exporo_sls:~$ application/composer require league/flysystem-aws-s3-v3
 exporo_sls:~$ application/composer require bref/bref "^0.5"
 ```
 
-##### 2
+##### 2 Make storage path configurable
 Add this line to **bootstrap/app.php**
 ...
 
@@ -83,7 +85,7 @@ $app->useStoragePath($_ENV['APP_STORAGE'] ?? $app->storagePath());
 ...
 
 
-##### 3
+##### 3 Removing error-causing env variables
 Remove key and secret env vars from:
 - dynamodb in config/cache.php
 - sqs in config/queue.ph
@@ -104,7 +106,7 @@ For example config/cache.php:
 ...
 
 
-##### 4
+##### 4 Create a temporary directory
 Add this to the boot method in **app/Providers/AppServiceProvider.php**:
 
 ...
@@ -115,14 +117,14 @@ if (! is_dir(config('view.compiled'))) {
 ...
    
 
-<a name="todo"/>
 ## Todo
+<a name="todo"/>
 
 - use bref inside of the docker env? 
 - add db password rotation rotation  ??
 
-<a name="credits"/>
 ## Credits
+<a name="credits"/>
    
 Thanks to  
 Taylor Otwell  
