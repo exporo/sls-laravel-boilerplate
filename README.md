@@ -42,27 +42,10 @@ All resources are defined as a cloudformation template in the serverless.yml fil
 * AWS S3 as a Storage provider
 * AWS Lambda event for triggering the cron jobs
 * AWS SQS + Lambda Event for queueing processes
-* AWS Cloudwatch Lambda events for keeping the functions warm
 
 All resources were paid in a pay as u go model.
 
 Because all resources were private and hosted in a VPC a EC2 instance is placed as a bastion host. The instance type is xxx and costs about 6 € per month. 
-
-For keeping the lambda functions and the the Aurora serverless DB  warum we have configured a AWS Cloudwatch event, which is invoking the website lambda function every 4 minute:
-
-```yml
-functions:
-  website:
-    handler: application/public/index.php
-    timeout: 30
-    layers:
-    - 'arn:aws:lambda:eu-central-1:209497400698:layer:php-73-fpm:9'
-    events:
-    - http: 'ANY /'
-    - http: 'ANY {proxy+}'
-    - schedule:
-        rate: rate(4 minutes)
-```
 
 ## Requirements
 <a name="requirements"/>
@@ -165,8 +148,9 @@ if (! is_dir(config('view.compiled'))) {
 ## Todo
 <a name="todo"/>
 
-- use bref inside of the docker env? 
-- add db password rotation rotation  ??
+- use bref as a docker container 
+- add db password rotation rotation 
+- keeping functions warm
 
 ## Credits
 <a name="credits"/>
