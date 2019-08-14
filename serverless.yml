@@ -42,6 +42,15 @@ provider:
     Resource: !Ref DBSecret
   environment:
     # Laravel environment variables
+    APP_URL:
+      !Join
+        - ''
+        - - 'https://'
+          - !Ref ApiGatewayRestApi
+          - '.execute-api.'
+          - ${opt:region, self:provider.region}
+          - '.amazonaws.com/'
+          - ${opt:stage, self:provider.stage}
     APP_KEY: !Sub '{{resolve:secretsmanager:${self:custom.UUID}-APP_KEY}}'
     APP_STORAGE: '/tmp'
     DB_HOST:

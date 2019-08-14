@@ -3,6 +3,7 @@
 namespace App\Console;
 
 use App\Console\Commands\ClearCounter;
+use App\Console\Commands\KeepWarm;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
@@ -14,19 +15,22 @@ class Kernel extends ConsoleKernel
      * @var array
      */
     protected $commands = [
-        //
+        KeepWarm::class
     ];
 
     /**
      * Define the application's command schedule.
      *
-     * @param  \Illuminate\Console\Scheduling\Schedule  $schedule
+     * @param  \Illuminate\Console\Scheduling\Schedule $schedule
      * @return void
      */
     protected function schedule(Schedule $schedule)
     {
+        $schedule->command(KeepWarm::class)
+            ->everyMinute();
+
         $schedule->command(ClearCounter::class)
-                  ->hourly();
+            ->hourly();
     }
 
     /**
@@ -36,7 +40,7 @@ class Kernel extends ConsoleKernel
      */
     protected function commands()
     {
-        $this->load(__DIR__.'/Commands');
+        $this->load(__DIR__ . '/Commands');
 
         require base_path('routes/console.php');
     }
