@@ -31,9 +31,7 @@ class CounterDb
             return CountDb::create(['counter' => 1]);
         }
 
-        $count->update([
-            'counter' => $count->counter + 1
-        ]);
+        \DB::table('count')->increment('counter', 1);
     }
 
 
