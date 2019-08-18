@@ -150,9 +150,9 @@ if (! is_dir(config('view.compiled'))) {
 ## Todo
 <a name="todo"/>
 
+- add queue error / retry  handling
 - use bref as a docker container 
 - add db password rotation rotation 
-- keeping functions warm
 
 ## Credits
 <a name="credits"/>
