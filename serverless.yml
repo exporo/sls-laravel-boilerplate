@@ -46,7 +46,7 @@ provider:
     APP_STORAGE: '/tmp'
     DB_HOST:
       Fn::GetAtt: [AuroraRDSCluster, Endpoint.Address]
-    DB_PASSWORD: !Sub '{{resolve:secretsmanager:exporo-sls-laravel-dev-DB_PASSWORD}}'
+    DB_PASSWORD: !Sub '{{resolve:secretsmanager:${self:custom.UUID}-DB_PASSWORD}}'
     LOG_CHANNEL: stderr
     SQS_REGION: ${self:provider.region}
     VIEW_COMPILED_PATH: /tmp/storage/framework/views
@@ -118,7 +118,7 @@ resources:
       Type: AWS::SQS::Queue
       Properties:
         VisibilityTimeout: 120
-        QueueName: '#{AWS::StackName}-${opt:stage, self:provider.stage}'
+        QueueName: ${self:custom.UUID}
 
     #Aurora MySql 5.6 serverless DB
     AuroraSubnetGroup:
@@ -127,7 +127,7 @@ resources:
         DBSubnetGroupDescription: "Aurora Subnet Group"
         Tags:
         - Key: Name
-          Value: "#{AWS::StackName}-${opt:stage, self:provider.stage}"
+          Value: ${self:custom.UUID}
         SubnetIds:
         - Ref: ServerlessSubnetA
         - Ref: ServerlessSubnetB
@@ -146,7 +146,7 @@ resources:
       Type: "AWS::RDS::DBCluster"
       Properties:
         MasterUsername: forge
-        MasterUserPassword: !Sub '{{resolve:secretsmanager:exporo-sls-laravel-dev-DB_PASSWORD}}'
+        MasterUserPassword: !Sub "{{resolve:secretsmanager:${self:custom.UUID}-DB_PASSWORD}}"
         DBSubnetGroupName:
           Ref: AuroraSubnetGroup
         Engine: aurora
@@ -164,7 +164,7 @@ resources:
         - Fn::GetAtt: ServerlessVPC.DefaultSecurityGroup
         Tags:
         - Key: Name
-          Value: "#{AWS::StackName}-${opt:stage, self:provider.stage}"
+          Value: ${self:custom.UUID}
 
     #DynamoDB Cache
     DynamoDB:
@@ -191,7 +191,7 @@ resources:
         UserData: !Base64 'yum install mysql --assumeyes'
         Tags:
         - Key: Name
-          Value: "#{AWS::StackName}-${opt:stage, self:provider.stage}"
+          Value: ${self:custom.UUID}
         NetworkInterfaces:
         - SubnetId:
             Ref: ServerlessSubnetA
@@ -218,7 +218,7 @@ resources:
         InstanceTenancy: default
         Tags:
         - Key: Name
-          Value: "#{AWS::StackName}-${opt:stage, self:provider.stage}"
+          Value: ${self:custom.UUID}
 
     ServerlessDefaultSG:
       Type: AWS::EC2::SecurityGroupIngress
@@ -242,7 +242,7 @@ resources:
         CidrBlock: ${self:custom.VPC_CIDR}.0.0.0/24
         Tags:
         - Key: Name
-          Value: "#{AWS::StackName}-${opt:stage, self:provider.stage}"
+          Value: ${self:custom.UUID}
     ServerlessSubnetB:
       DependsOn: ServerlessVPC
       Type: AWS::EC2::Subnet
@@ -253,7 +253,7 @@ resources:
         CidrBlock: ${self:custom.VPC_CIDR}.0.1.0/24
         Tags:
         - Key: Name
-          Value: "#{AWS::StackName}-${opt:stage, self:provider.stage}"
+          Value: ${self:custom.UUID}
     ServerlessSubnetC:
       DependsOn: ServerlessVPC
       Type: AWS::EC2::Subnet
@@ -264,7 +264,7 @@ resources:
         CidrBlock: ${self:custom.VPC_CIDR}.0.2.0/24
         Tags:
         - Key: Name
-          Value: "#{AWS::StackName}-${opt:stage, self:provider.stage}"
+          Value: ${self:custom.UUID}
 
     DynamoDBEndpoint:
       Type: "AWS::EC2::VPCEndpoint"
@@ -304,7 +304,7 @@ resources:
       Properties:
         Tags:
         - Key: Name
-          Value: "#{AWS::StackName}-${opt:stage, self:provider.stage}"
+          Value: ${self:custom.UUID}
 
     ServerlessGatewayAttachment:
       Type: AWS::EC2::VPCGatewayAttachment
@@ -321,7 +321,7 @@ resources:
           Ref: ServerlessVPC
         Tags:
         - Key: Name
-          Value: "#{AWS::StackName}-${opt:stage, self:provider.stage}"
+          Value: ${self:custom.UUID}
 
     ServerlessRoute:
       Type: AWS::EC2::Route
