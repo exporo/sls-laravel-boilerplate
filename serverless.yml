@@ -360,7 +360,7 @@ package:
   exclude:
   - '.git/**'
   - 'node_modules/**'
-  - 'docker/**'
+  - 'data/**'
   - 'application/node_modules/**'
   - 'application/.env'
 

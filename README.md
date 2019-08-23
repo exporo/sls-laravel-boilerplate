@@ -84,7 +84,7 @@ exporo_sls:~$ $serverless invoke -f artisan --data '{"cli":"migrate --force"}' -
 
 ```console
 exporo_sls:~$ docker-compose up -d
-exporo_sls:~$ docker-compose exec webapp bash
+exporo_sls:~$ docker-compose exec php bash
 ```
 
 ## Demo application
@@ -108,16 +108,7 @@ exporo_sls:~$ application/composer require league/flysystem-aws-s3-v3
 exporo_sls:~$ application/composer require bref/bref "^0.5"
 ```
 
-##### 2: Make storage path configurable
-Add this line to **bootstrap/app.php**
-
-
-```php
-$app->useStoragePath($_ENV['APP_STORAGE'] ?? $app->storagePath());
-```
-
-
-##### 3: Removing error-causing env variables
+##### 2: Removing error-causing env variables
 Replace key and secret env vars with '' in:
 - dynamodb in config/cache.php
 - sqs in config/queue.ph
@@ -136,22 +127,52 @@ For example dynamodb in config/cache.php:
         ],
 ```
 
+##### 3: Update local filesystem
+Update the root folder in **config/filesystem.php** to:
 
-##### 4: Create a temporary directory
+```php
+'disks' => [
+
+        'local' => [
+            'driver' => 'local',
+            'root' => env('APP_STORAGE', storage_path('app')),
+        ],
+```
+
+##### 4: Set storage directory and create a temporary directory
 Add this to the boot method in **app/Providers/AppServiceProvider.php**:
 
 ```php
+app()->useStoragePath(env('APP_STORAGE', $this->app->storagePath()));
+
 if (! is_dir(config('view.compiled'))) {
     mkdir(config('view.compiled'), 0755, true);
 }
 ```
-   
+
+##### 5: Example application/.env
+```
+APP_KEY=base64:c3SzeMQZZHPT+eLQH6BnpDhw/uKH2N5zgM2x2a8qpcA=
+APP_ENV=dev
+APP_DEBUG=true
+
+LOG_CHANNEL=stderr
+APP_STORAGE=/tmp
+CACHE_DRIVER=redis
+SESSION_DRIVER=redis
+REDIS_HOST=redis
+VIEW_COMPILED_PATH=/tmp/storage/framework/views
+
+DB_HOST=mysql
+DB_USERNAME=homestead
+DB_PASSWORD=secret
+DB_DATABASE=forge
+```
 
 ## Todo
 <a name="todo"/>
 
 - add queue error / retry  handling
-- use bref as a docker container 
 - add db password rotation rotation 
 
 ## Credits

@@ -1,16 +1,21 @@
-version: '3.2'
+version: "3.5"
 
 services:
+  web:
+    image: bref/fpm-dev-gateway
+    ports:
+    - '8000:80'
+    volumes:
+    - ./application/:/var/task
+    depends_on:
+    - php
+    environment:
+      HANDLER: public/index.php
 
-  webapp:
+  php:
     build: .
     volumes:
-    - ./application:/var/www/html:delegated
-    ports:
-    - 80:8080
-    depends_on:
-    - mysql
-    - redis
+    - ./application/:/var/task:ro
 
   mysql:
     image: mysql:5.7.23
@@ -20,11 +25,11 @@ services:
       MYSQL_PASSWORD: secret
       MYSQL_ROOT_PASSWORD: root
     volumes:
-    - ./docker/data/mysql/:/var/lib/mysql
+    - ./data/mysql/:/var/lib/mysql
     ports:
     - 3306:3306
 
   redis:
     image: redis:4.0.11-alpine
     volumes:
-    - ./application/data/redis:/data
+    - ./data/redis:/data
