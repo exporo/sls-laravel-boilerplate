@@ -6,19 +6,19 @@ services:
     ports:
     - '8000:80'
     volumes:
-    - ./application/:/var/task
+    - .:/var/task
     depends_on:
     - php
     environment:
-      HANDLER: public/index.php
+      HANDLER: application/public/index.php
 
   php:
-    build: .
+    image: bref/php-73-fpm-dev
     volumes:
-    - ./application/:/var/task:ro
+    - .:/var/task:ro
 
   mysql:
-    image: mysql:5.7.23
+    image: mysql:5.6
     environment:
       MYSQL_DATABASE: forge
       MYSQL_USER: homestead

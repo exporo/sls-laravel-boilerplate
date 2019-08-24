@@ -85,6 +85,8 @@ exporo_sls:~$ $serverless invoke -f artisan --data '{"cli":"migrate --force"}' -
 ```console
 exporo_sls:~$ docker-compose up -d
 exporo_sls:~$ docker-compose exec php bash
+bash-4.2# cd /var/task/application/
+bash-4.2# php artisan XYZ
 ```
 
 ## Demo application
