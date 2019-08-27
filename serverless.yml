@@ -42,6 +42,7 @@ provider:
     Resource: !Ref DBSecret
   environment:
     # Laravel environment variables
+    #APP_DEBUG: true
     APP_KEY: !Sub '{{resolve:secretsmanager:${self:custom.UUID}-APP_KEY}}'
     APP_STORAGE: '/tmp'
     DB_HOST:
@@ -57,6 +58,8 @@ provider:
     DYNAMODB_CACHE_TABLE: !Ref DynamoDB
     FILESYSTEM_DRIVER: s3
     AWS_BUCKET: !Ref S3Bucket
+    ASSET_URL:
+      Fn::GetAtt: [S3PublicAssetsBucket, WebsiteURL]
 
 custom:
   OFFICE_IP: 0.0.0.0/0
@@ -188,7 +191,7 @@ resources:
         ImageId: ami-e2526d09
         InstanceType: t2.nano
         Monitoring: false
-        UserData: !Base64 'yum install mysql --assumeyes'
+        UserData: !Base64 'yum install mysql --assumeyes && shutdown -h now'
         Tags:
         - Key: Name
           Value: ${self:custom.UUID}
@@ -200,13 +203,45 @@ resources:
           GroupSet:
           - Fn::GetAtt: ServerlessVPC.DefaultSecurityGroup
 
-    #S3 Bucket
+    #S3 Storage Bucket
     S3Bucket:
       Type: AWS::S3::Bucket
       Properties:
-        BucketName: "#{AWS::StackName}-${opt:stage, self:provider.stage}"
-        MetricsConfigurations:
-        - Id: EntireBucket
+        AccessControl: Private
+        BucketName: "${self:custom.UUID}"
+
+    #S3 Public Assets Bucket
+    S3PublicAssetsBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        AccessControl: PublicRead
+        BucketName: "${self:custom.UUID}-assets"
+        WebsiteConfiguration:
+          IndexDocument: index.html
+
+    S3PublicAssetsBucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      DependsOn: S3PublicAssetsBucket
+      Properties:
+        Bucket:
+          Ref: S3PublicAssetsBucket
+        PolicyDocument:
+          Statement:
+          - Sid: PublicReadGetObject
+            Effect: Allow
+            Principal: "*"
+            Action:
+            - s3:GetObject
+            Resource:
+              Fn::Join: [
+                "", [
+                "arn:aws:s3:::",
+                {
+                  "Ref": "S3PublicAssetsBucket"
+                },
+                "/*"
+              ]
+              ]
 
     # VPC config
     ServerlessVPC:

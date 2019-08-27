@@ -5,6 +5,7 @@
 [Requirements](#requirements)  
 [Installation](#installation)  
 [Deployment](#deployment)  
+[Assets](#assets)  
 [Local development](#local)  
 [Demo application](#demo)  
 [Migrate your application](#migration)  
@@ -76,8 +77,27 @@ exporo_sls:~$ application/composer install
 ```console
 exporo_sls:~$ php artisan config:clear
 exporo_sls:~$ serverless deploy --stage {stage} --aws-profile default
-exporo_sls:~$ $serverless invoke -f artisan --data '{"cli":"migrate --force"}' --stage {stage} --aws-profile default
+exporo_sls:~$ serverless invoke -f artisan --data '{"cli":"migrate --force"}' --stage {stage} --aws-profile default
+exporo_sls:~$ aws s3 sync public s3://${service-name}-${stage}-assets --delete --acl public-read --profile default
 ```
+
+## Assets
+<a name="assets"/>
+
+In addition to the private S3 bucket for the Laravel storage, a public bucket is created for the assets.
+
+Assets should be used in the views like this:
+```php
+<img width="400px" src="{{ asset('exporo-tech.png') }}">
+```
+
+In the deployment chain, the S3 bucket should be synchronized with the public folder.
+```shell
+aws s3 sync public s3://${service-name}-${stage}-assets --delete --acl public-read --profile default
+```
+
+**local environment**  
+Another docker container, for the delivery of the assets, with the address localhost:8080 will be built for the local environment. 
 
 ## Local development
 <a name="local"/>
@@ -85,6 +105,7 @@ exporo_sls:~$ $serverless invoke -f artisan --data '{"cli":"migrate --force"}' -
 ```console
 exporo_sls:~$ docker-compose up -d
 exporo_sls:~$ docker-compose exec php bash
+exporo_sls:~$ open http://localhost
 bash-4.2# cd /var/task/application/
 bash-4.2# php artisan XYZ
 ```
@@ -169,6 +190,8 @@ DB_HOST=mysql
 DB_USERNAME=homestead
 DB_PASSWORD=secret
 DB_DATABASE=forge
+
+ASSET_URL=http://localhost:8080
 ```
 
 ## Todo
