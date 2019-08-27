@@ -1,0 +1,27 @@
+version: 2
+jobs:
+  build:
+    docker:
+    - image: circleci/php:7.3-apache-node-browsers-legacy
+      environment:
+        FLASK_CONFIG: testing
+    steps:
+    - checkout
+    - run:
+        name: Install NPM
+        command: |
+          npm install
+    - run:
+        name: Install Composer
+        command: |
+          composer install
+    - run:
+        name: Install Application NPM
+        command: |
+          cd application
+          npm install
+    - run:
+        name: Install Application Composer
+        command: |
+          cd application
+          composer install
