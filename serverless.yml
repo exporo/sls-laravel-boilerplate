@@ -300,6 +300,18 @@ resources:
         Tags:
         - Key: Name
           Value: ${self:custom.UUID}
+    ServerlessSubnetP:
+      DependsOn: ServerlessVPC
+      Type: AWS::EC2::Subnet
+      Properties:
+        VpcId:
+          Ref: ServerlessVPC
+        AvailabilityZone: ${self:provider.region}c
+        MapPublicIpOnLaunch: true
+        CidrBlock: ${self:custom.VPC_CIDR}.0.3.0/24
+        Tags:
+        - Key: Name
+          Value: "${self:custom.UUID}-public"
 
     DynamoDBEndpoint:
       Type: "AWS::EC2::VPCEndpoint"
@@ -390,6 +402,25 @@ resources:
           Ref: ServerlessRTB
         SubnetId:
           Ref: ServerlessSubnetC
+
+    EIP:
+      Type: 'AWS::EC2::EIP'
+      Properties:
+        Domain: vpc
+
+    NatGateway:
+      Type: 'AWS::EC2::NatGateway'
+      DependsOn: ServerlessSubnetP
+      Properties:
+        AllocationId: !GetAtt 'EIP.AllocationId'
+        SubnetId: !Ref ServerlessSubnetP
+
+    NatGatewayRoute:
+      Type: 'AWS::EC2::Route'
+      Properties:
+        RouteTableId: !Ref ServerlessRTB
+        DestinationCidrBlock: '0.0.0.0/0'
+        NatGatewayId: !Ref NatGateway
 
 package:
   exclude:

@@ -199,6 +199,7 @@ ASSET_URL=http://localhost:8080
 
 - add queue error / retry  handling
 - add db password rotation rotation 
+- display stderr from scheduled commands 
 
 ## Credits
 <a name="credits"/>

@@ -20,6 +20,7 @@ class KeepWarm extends Command
 
     public function handle()
     {
-        $this->http->get(config('app.url'))->getStatusCode();
+        echo $this->http->get(config('app.url'))->getStatusCode();
+dd('hhihi');
     }
 }
