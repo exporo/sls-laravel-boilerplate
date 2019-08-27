@@ -1,30 +1,42 @@
-version: '3.2'
+version: "3.5"
 
 services:
-
-  webapp:
-    build: .
-    volumes:
-    - ./application:/var/www/html:delegated
+  assets:
+    image: flashspys/nginx-static
     ports:
-    - 80:8080
+    - 8080:80
+    volumes:
+    - ./application/public:/static
+
+  web:
+    image: bref/fpm-dev-gateway
+    ports:
+    - 80:80
+    volumes:
+    - .:/var/task
     depends_on:
-    - mysql
-    - redis
+    - php
+    environment:
+      HANDLER: application/public/index.php
+
+  php:
+    image: bref/php-73-fpm-dev
+    volumes:
+    - .:/var/task:ro
 
   mysql:
-    image: mysql:5.7.23
+    image: mysql:5.6
     environment:
       MYSQL_DATABASE: forge
       MYSQL_USER: homestead
       MYSQL_PASSWORD: secret
       MYSQL_ROOT_PASSWORD: root
     volumes:
-    - ./docker/data/mysql/:/var/lib/mysql
+    - ./data/mysql/:/var/lib/mysql
     ports:
     - 3306:3306
 
   redis:
     image: redis:4.0.11-alpine
     volumes:
-    - ./application/data/redis:/data
+    - ./data/redis:/data

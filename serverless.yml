@@ -42,20 +42,12 @@ provider:
     Resource: !Ref DBSecret
   environment:
     # Laravel environment variables
-    APP_URL:
-      !Join
-        - ''
-        - - 'https://'
-          - !Ref ApiGatewayRestApi
-          - '.execute-api.'
-          - ${opt:region, self:provider.region}
-          - '.amazonaws.com/'
-          - ${opt:stage, self:provider.stage}
+    #APP_DEBUG: true
     APP_KEY: !Sub '{{resolve:secretsmanager:${self:custom.UUID}-APP_KEY}}'
     APP_STORAGE: '/tmp'
     DB_HOST:
       Fn::GetAtt: [AuroraRDSCluster, Endpoint.Address]
-    DB_PASSWORD: !Sub '{{resolve:secretsmanager:exporo-sls-laravel-dev-DB_PASSWORD}}'
+    DB_PASSWORD: !Sub '{{resolve:secretsmanager:${self:custom.UUID}-DB_PASSWORD}}'
     LOG_CHANNEL: stderr
     SQS_REGION: ${self:provider.region}
     VIEW_COMPILED_PATH: /tmp/storage/framework/views
@@ -66,6 +58,8 @@ provider:
     DYNAMODB_CACHE_TABLE: !Ref DynamoDB
     FILESYSTEM_DRIVER: s3
     AWS_BUCKET: !Ref S3Bucket
+    ASSET_URL:
+      Fn::GetAtt: [S3PublicAssetsBucket, WebsiteURL]
 
 custom:
   OFFICE_IP: 0.0.0.0/0
@@ -74,6 +68,9 @@ custom:
   UUID: "${self:service.name}-${opt:stage, self:provider.stage}"
   AURORA:
     DELETE_PROTECTION: false
+    MIN_CAPACITY: 1
+    MAX_CAPACITY: 1
+    AUTO_PAUSE_SECONDS: 600
 
 functions:
   website:
@@ -124,7 +121,7 @@ resources:
       Type: AWS::SQS::Queue
       Properties:
         VisibilityTimeout: 120
-        QueueName: '#{AWS::StackName}-${opt:stage, self:provider.stage}'
+        QueueName: ${self:custom.UUID}
 
     #Aurora MySql 5.6 serverless DB
     AuroraSubnetGroup:
@@ -133,7 +130,7 @@ resources:
         DBSubnetGroupDescription: "Aurora Subnet Group"
         Tags:
         - Key: Name
-          Value: "#{AWS::StackName}-${opt:stage, self:provider.stage}"
+          Value: ${self:custom.UUID}
         SubnetIds:
         - Ref: ServerlessSubnetA
         - Ref: ServerlessSubnetB
@@ -152,7 +149,7 @@ resources:
       Type: "AWS::RDS::DBCluster"
       Properties:
         MasterUsername: forge
-        MasterUserPassword: !Sub '{{resolve:secretsmanager:exporo-sls-laravel-dev-DB_PASSWORD}}'
+        MasterUserPassword: !Sub "{{resolve:secretsmanager:${self:custom.UUID}-DB_PASSWORD}}"
         DBSubnetGroupName:
           Ref: AuroraSubnetGroup
         Engine: aurora
@@ -161,17 +158,22 @@ resources:
         DeletionProtection: ${self:custom.AURORA.DELETE_PROTECTION}
         DatabaseName: forge
         BackupRetentionPeriod: 30
+        ScalingConfiguration:
+          MinCapacity: ${self:custom.AURORA.MIN_CAPACITY}
+          MaxCapacity: ${self:custom.AURORA.MAX_CAPACITY}
+          AutoPause: true
+          SecondsUntilAutoPause: ${self:custom.AURORA.AUTO_PAUSE_SECONDS}
         VpcSecurityGroupIds:
         - Fn::GetAtt: ServerlessVPC.DefaultSecurityGroup
         Tags:
         - Key: Name
-          Value: "#{AWS::StackName}-${opt:stage, self:provider.stage}"
+          Value: ${self:custom.UUID}
 
     #DynamoDB Cache
     DynamoDB:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: cache
+        TableName: ${self:custom.UUID}
         AttributeDefinitions:
         - AttributeName: key
           AttributeType: S
@@ -189,10 +191,10 @@ resources:
         ImageId: ami-e2526d09
         InstanceType: t2.nano
         Monitoring: false
-        UserData: !Base64 'yum install mysql --assumeyes'
+        UserData: !Base64 'yum install mysql --assumeyes && shutdown -h now'
         Tags:
         - Key: Name
-          Value: "#{AWS::StackName}-${opt:stage, self:provider.stage}"
+          Value: ${self:custom.UUID}
         NetworkInterfaces:
         - SubnetId:
             Ref: ServerlessSubnetA
@@ -201,13 +203,45 @@ resources:
           GroupSet:
           - Fn::GetAtt: ServerlessVPC.DefaultSecurityGroup
 
-    #S3 Bucket
+    #S3 Storage Bucket
     S3Bucket:
       Type: AWS::S3::Bucket
       Properties:
-        BucketName: "#{AWS::StackName}-${opt:stage, self:provider.stage}"
-        MetricsConfigurations:
-        - Id: EntireBucket
+        AccessControl: Private
+        BucketName: "${self:custom.UUID}"
+
+    #S3 Public Assets Bucket
+    S3PublicAssetsBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        AccessControl: PublicRead
+        BucketName: "${self:custom.UUID}-assets"
+        WebsiteConfiguration:
+          IndexDocument: index.html
+
+    S3PublicAssetsBucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      DependsOn: S3PublicAssetsBucket
+      Properties:
+        Bucket:
+          Ref: S3PublicAssetsBucket
+        PolicyDocument:
+          Statement:
+          - Sid: PublicReadGetObject
+            Effect: Allow
+            Principal: "*"
+            Action:
+            - s3:GetObject
+            Resource:
+              Fn::Join: [
+                "", [
+                "arn:aws:s3:::",
+                {
+                  "Ref": "S3PublicAssetsBucket"
+                },
+                "/*"
+              ]
+              ]
 
     # VPC config
     ServerlessVPC:
@@ -219,7 +253,7 @@ resources:
         InstanceTenancy: default
         Tags:
         - Key: Name
-          Value: "#{AWS::StackName}-${opt:stage, self:provider.stage}"
+          Value: ${self:custom.UUID}
 
     ServerlessDefaultSG:
       Type: AWS::EC2::SecurityGroupIngress
@@ -243,7 +277,7 @@ resources:
         CidrBlock: ${self:custom.VPC_CIDR}.0.0.0/24
         Tags:
         - Key: Name
-          Value: "#{AWS::StackName}-${opt:stage, self:provider.stage}"
+          Value: ${self:custom.UUID}
     ServerlessSubnetB:
       DependsOn: ServerlessVPC
       Type: AWS::EC2::Subnet
@@ -254,7 +288,7 @@ resources:
         CidrBlock: ${self:custom.VPC_CIDR}.0.1.0/24
         Tags:
         - Key: Name
-          Value: "#{AWS::StackName}-${opt:stage, self:provider.stage}"
+          Value: ${self:custom.UUID}
     ServerlessSubnetC:
       DependsOn: ServerlessVPC
       Type: AWS::EC2::Subnet
@@ -265,7 +299,7 @@ resources:
         CidrBlock: ${self:custom.VPC_CIDR}.0.2.0/24
         Tags:
         - Key: Name
-          Value: "#{AWS::StackName}-${opt:stage, self:provider.stage}"
+          Value: ${self:custom.UUID}
 
     DynamoDBEndpoint:
       Type: "AWS::EC2::VPCEndpoint"
@@ -305,7 +339,7 @@ resources:
       Properties:
         Tags:
         - Key: Name
-          Value: "#{AWS::StackName}-${opt:stage, self:provider.stage}"
+          Value: ${self:custom.UUID}
 
     ServerlessGatewayAttachment:
       Type: AWS::EC2::VPCGatewayAttachment
@@ -322,7 +356,7 @@ resources:
           Ref: ServerlessVPC
         Tags:
         - Key: Name
-          Value: "#{AWS::StackName}-${opt:stage, self:provider.stage}"
+          Value: ${self:custom.UUID}
 
     ServerlessRoute:
       Type: AWS::EC2::Route
@@ -361,7 +395,7 @@ package:
   exclude:
   - '.git/**'
   - 'node_modules/**'
-  - 'docker/**'
+  - 'data/**'
   - 'application/node_modules/**'
   - 'application/.env'
 

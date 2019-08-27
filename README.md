@@ -5,6 +5,7 @@
 [Requirements](#requirements)  
 [Installation](#installation)  
 [Deployment](#deployment)  
+[Assets](#assets)  
 [Local development](#local)  
 [Demo application](#demo)  
 [Migrate your application](#migration)  
@@ -76,15 +77,37 @@ exporo_sls:~$ application/composer install
 ```console
 exporo_sls:~$ php artisan config:clear
 exporo_sls:~$ serverless deploy --stage {stage} --aws-profile default
-exporo_sls:~$ $serverless invoke -f artisan --data '{"cli":"migrate --force"}' --stage {stage} --aws-profile default
+exporo_sls:~$ serverless invoke -f artisan --data '{"cli":"migrate --force"}' --stage {stage} --aws-profile default
+exporo_sls:~$ aws s3 sync public s3://${service-name}-${stage}-assets --delete --acl public-read --profile default
 ```
+
+## Assets
+<a name="assets"/>
+
+In addition to the private S3 bucket for the Laravel storage, a public bucket is created for the assets.
+
+Assets should be used in the views like this:
+```php
+<img width="400px" src="{{ asset('exporo-tech.png') }}">
+```
+
+In the deployment chain, the S3 bucket should be synchronized with the public folder.
+```shell
+aws s3 sync public s3://${service-name}-${stage}-assets --delete --acl public-read --profile default
+```
+
+**local environment**  
+Another docker container, for the delivery of the assets, with the address localhost:8080 will be built for the local environment. 
 
 ## Local development
 <a name="local"/>
 
 ```console
 exporo_sls:~$ docker-compose up -d
-exporo_sls:~$ docker-compose exec webapp bash
+exporo_sls:~$ docker-compose exec php bash
+exporo_sls:~$ open http://localhost
+bash-4.2# cd /var/task/application/
+bash-4.2# php artisan XYZ
 ```
 
 ## Demo application
@@ -108,16 +131,7 @@ exporo_sls:~$ application/composer require league/flysystem-aws-s3-v3
 exporo_sls:~$ application/composer require bref/bref "^0.5"
 ```
 
-##### 2: Make storage path configurable
-Add this line to **bootstrap/app.php**
-
-
-```php
-$app->useStoragePath($_ENV['APP_STORAGE'] ?? $app->storagePath());
-```
-
-
-##### 3: Removing error-causing env variables
+##### 2: Removing error-causing env variables
 Replace key and secret env vars with '' in:
 - dynamodb in config/cache.php
 - sqs in config/queue.ph
@@ -136,23 +150,55 @@ For example dynamodb in config/cache.php:
         ],
 ```
 
+##### 3: Update local filesystem
+Update the root folder in **config/filesystem.php** to:
 
-##### 4: Create a temporary directory
+```php
+'disks' => [
+
+        'local' => [
+            'driver' => 'local',
+            'root' => env('APP_STORAGE', storage_path('app')),
+        ],
+```
+
+##### 4: Set storage directory and create a temporary directory
 Add this to the boot method in **app/Providers/AppServiceProvider.php**:
 
 ```php
+app()->useStoragePath(env('APP_STORAGE', $this->app->storagePath()));
+
 if (! is_dir(config('view.compiled'))) {
     mkdir(config('view.compiled'), 0755, true);
 }
 ```
-   
+
+##### 5: Example application/.env
+```
+APP_KEY=base64:c3SzeMQZZHPT+eLQH6BnpDhw/uKH2N5zgM2x2a8qpcA=
+APP_ENV=dev
+APP_DEBUG=true
+
+LOG_CHANNEL=stderr
+APP_STORAGE=/tmp
+CACHE_DRIVER=redis
+SESSION_DRIVER=redis
+REDIS_HOST=redis
+VIEW_COMPILED_PATH=/tmp/storage/framework/views
+
+DB_HOST=mysql
+DB_USERNAME=homestead
+DB_PASSWORD=secret
+DB_DATABASE=forge
+
+ASSET_URL=http://localhost:8080
+```
 
 ## Todo
 <a name="todo"/>
 
-- use bref as a docker container 
+- add queue error / retry  handling
 - add db password rotation rotation 
-- keeping functions warm
 
 ## Credits
 <a name="credits"/>

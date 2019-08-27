@@ -75,7 +75,8 @@
 <body>
 <div class="flex-center position-ref full-height">
     <div class="content">
-        <div class="title m-b-md">
+        <img width="400px" src="{{ asset('exporo-tech.png') }}">
+        <div class="title m-b-md" >
             SLS Laravel Boilerplate
         </div>
         <hr>
