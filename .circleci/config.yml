@@ -25,3 +25,15 @@ jobs:
         command: |
           cd application
           composer install
+    - run:
+        name: Install Serverless
+        command: |
+          npm install -g serverless
+    - run:
+        name: Serverless deployment
+        command: |
+          serverless deploy --stage ${CIRCLE_BRANCH}
+    - run:
+        name: Serverless remove
+        command: |
+          serverless remove --stage ${CIRCLE_BRANCH}
