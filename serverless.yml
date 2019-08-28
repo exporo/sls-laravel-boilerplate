@@ -5,6 +5,7 @@ provider:
   name: aws
   runtime: provided
   region: eu-central-1
+  profile: default
   vpc:
     securityGroupIds:
     - Fn::GetAtt: ServerlessVPC.DefaultSecurityGroup
@@ -63,9 +64,11 @@ provider:
 
 custom:
   OFFICE_IP: 0.0.0.0/0
-  KEY_NAME: exporo-sls-laravel
   VPC_CIDR: 10
-  UUID: "${self:service.name}-${opt:stage, self:provider.stage}"
+  UUID: ${self:service.name}-${opt:stage, self:provider.stage}
+  PROFILE: ${self:provider.profile}
+  REGION: ${opt:region, self:provider.region}
+  STAGE: ${opt:stage, self:provider.stage}
   AURORA:
     DELETE_PROTECTION: false
     MIN_CAPACITY: 1
@@ -187,7 +190,7 @@ resources:
       Type: AWS::EC2::Instance
       Properties:
         DisableApiTermination: false
-        KeyName: ${self:custom.KEY_NAME}
+        KeyName: ${self:custom.UUID}
         ImageId: ami-e2526d09
         InstanceType: t2.nano
         Monitoring: false
@@ -401,3 +404,4 @@ package:
 
 plugins:
 - serverless-pseudo-parameters
+- deploy-chain
