@@ -30,7 +30,8 @@ class Kernel extends ConsoleKernel
             ->everyMinute();
 
         $schedule->command(ClearCounter::class)
-            ->hourly();
+            ->hourly()
+            ->between('08:00', '21:00');
     }
 
     /**

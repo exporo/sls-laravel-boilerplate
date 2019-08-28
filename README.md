@@ -46,7 +46,9 @@ All resources are defined as a cloudformation template in the serverless.yml fil
 
 All resources were paid in a pay as you go model.
 
-Since all resources were private and hosted in a VPC, an EC2 instance is placed as a bastion host. The instance type is t2.nano and costs about 6 € per month. 
+Since all resources are located in private subnets and hosted in a VPC, an EC2 instance is placed in a public subnet as a bastion host and NAT instance.
+The NAT instance replaces a NAT gateway (~ 40€/month) with which Lambda functions can access the Internet. 
+The instance type is t2.nano and costs about 5 € per month. 
 
 ## Requirements
 <a name="requirements"/>

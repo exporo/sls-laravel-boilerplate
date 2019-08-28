@@ -63,7 +63,7 @@ provider:
 
 custom:
   OFFICE_IP: 0.0.0.0/0
-  KEY_NAME: exporo-sls-laravel
+  KEY_NAME: exporo-sls-laravel2
   VPC_CIDR: 10
   UUID: "${self:service.name}-${opt:stage, self:provider.stage}"
   AURORA:
@@ -188,16 +188,21 @@ resources:
       Properties:
         DisableApiTermination: false
         KeyName: ${self:custom.KEY_NAME}
-        ImageId: ami-e2526d09
+        ImageId: ami-0097b5eb
         InstanceType: t2.nano
         Monitoring: false
-        UserData: !Base64 'yum install mysql --assumeyes && shutdown -h now'
+        SourceDestCheck: false
+        UserData:
+          Fn::Base64: !Sub |
+            #!/bin/bash
+            yum -y update
+            yum install mysql --assumeyes
         Tags:
         - Key: Name
           Value: ${self:custom.UUID}
         NetworkInterfaces:
         - SubnetId:
-            Ref: ServerlessSubnetA
+            Ref: ServerlessSubnetP
           AssociatePublicIpAddress: 'true'
           DeviceIndex: '0'
           GroupSet:
@@ -273,45 +278,48 @@ resources:
       Properties:
         VpcId:
           Ref: ServerlessVPC
+        MapPublicIpOnLaunch: true
         AvailabilityZone: ${self:provider.region}a
         CidrBlock: ${self:custom.VPC_CIDR}.0.0.0/24
         Tags:
         - Key: Name
-          Value: ${self:custom.UUID}
+          Value: ${self:custom.UUID}-a
     ServerlessSubnetB:
       DependsOn: ServerlessVPC
       Type: AWS::EC2::Subnet
       Properties:
         VpcId:
           Ref: ServerlessVPC
+        MapPublicIpOnLaunch: true
         AvailabilityZone: ${self:provider.region}b
         CidrBlock: ${self:custom.VPC_CIDR}.0.1.0/24
         Tags:
         - Key: Name
-          Value: ${self:custom.UUID}
+          Value: ${self:custom.UUID}-b
     ServerlessSubnetC:
       DependsOn: ServerlessVPC
       Type: AWS::EC2::Subnet
       Properties:
         VpcId:
           Ref: ServerlessVPC
+        MapPublicIpOnLaunch: true
         AvailabilityZone: ${self:provider.region}c
         CidrBlock: ${self:custom.VPC_CIDR}.0.2.0/24
         Tags:
         - Key: Name
-          Value: ${self:custom.UUID}
+          Value: ${self:custom.UUID}-c
     ServerlessSubnetP:
       DependsOn: ServerlessVPC
       Type: AWS::EC2::Subnet
       Properties:
         VpcId:
           Ref: ServerlessVPC
-        AvailabilityZone: ${self:provider.region}c
         MapPublicIpOnLaunch: true
+        AvailabilityZone: ${self:provider.region}c
         CidrBlock: ${self:custom.VPC_CIDR}.0.3.0/24
         Tags:
         - Key: Name
-          Value: "${self:custom.UUID}-public"
+          Value: ${self:custom.UUID}-public
 
     DynamoDBEndpoint:
       Type: "AWS::EC2::VPCEndpoint"
@@ -370,12 +378,30 @@ resources:
         - Key: Name
           Value: ${self:custom.UUID}
 
-    ServerlessRoute:
+    ServerlessPublicRTB:
+      Type: AWS::EC2::RouteTable
+      Properties:
+        VpcId:
+          Ref: ServerlessVPC
+        Tags:
+        - Key: Name
+          Value: ${self:custom.UUID}-public
+
+    ServerlessRoutePublic:
       Type: AWS::EC2::Route
       Properties:
         DestinationCidrBlock: 0.0.0.0/0
         GatewayId:
           Ref: ServerlessIGW
+        RouteTableId:
+          Ref: ServerlessPublicRTB
+
+    ServerlessRoute:
+      Type: AWS::EC2::Route
+      Properties:
+        DestinationCidrBlock: 0.0.0.0/0
+        InstanceId:
+          Ref: BastionHost
         RouteTableId:
           Ref: ServerlessRTB
 
@@ -403,24 +429,13 @@ resources:
         SubnetId:
           Ref: ServerlessSubnetC
 
-    EIP:
-      Type: 'AWS::EC2::EIP'
+    ServerlessSubnetRTAP:
+      Type: AWS::EC2::SubnetRouteTableAssociation
       Properties:
-        Domain: vpc
-
-    NatGateway:
-      Type: 'AWS::EC2::NatGateway'
-      DependsOn: ServerlessSubnetP
-      Properties:
-        AllocationId: !GetAtt 'EIP.AllocationId'
-        SubnetId: !Ref ServerlessSubnetP
-
-    NatGatewayRoute:
-      Type: 'AWS::EC2::Route'
-      Properties:
-        RouteTableId: !Ref ServerlessRTB
-        DestinationCidrBlock: '0.0.0.0/0'
-        NatGatewayId: !Ref NatGateway
+        RouteTableId:
+          Ref: ServerlessPublicRTB
+        SubnetId:
+          Ref: ServerlessSubnetP
 
 package:
   exclude:
