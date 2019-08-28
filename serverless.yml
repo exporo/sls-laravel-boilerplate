@@ -209,6 +209,8 @@ resources:
     #S3 Storage Bucket
     S3Bucket:
       Type: AWS::S3::Bucket
+
+      DeletionPolicy: Retain
       Properties:
         AccessControl: Private
         BucketName: "${self:custom.UUID}"
@@ -216,6 +218,7 @@ resources:
     #S3 Public Assets Bucket
     S3PublicAssetsBucket:
       Type: AWS::S3::Bucket
+      DeletionPolicy: Retain
       Properties:
         AccessControl: PublicRead
         BucketName: "${self:custom.UUID}-assets"

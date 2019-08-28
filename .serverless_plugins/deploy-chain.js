@@ -6,15 +6,6 @@ class DeployChain {
         this.options = options;
 
         this.commands = {
-            keypair: {
-                lifecycleEvents: ['upsert'],
-                options: {
-                    verbose: {
-                        usage: 'Increase verbosity',
-                        shortcut: 'v'
-                    }
-                }
-            },
             ssh: {
                 lifecycleEvents: ['show'],
                 options: {
@@ -27,7 +18,6 @@ class DeployChain {
         };
 
         this.hooks = {
-            'keypair:upsert': () => Promise.resolve().then(this.upsertKeyPair.bind(this)),
             'ssh:show': () => Promise.resolve().then(this.ssh.bind(this)),
             'before:deploy:deploy': () => Promise.resolve().then(this.upsertKeyPair.bind(this)),
             'after:deploy:deploy': () => Promise.resolve().then(this.deployChain.bind(this)),
@@ -37,7 +27,7 @@ class DeployChain {
 
     upsertKeyPair() {
         if (this.hasKey(this.getConfig().uuid)) {
-            console.log('Key (' + name + ') already exists');
+            this.serverless.cli.log('Key (' + this.getConfig().uuid + ') already exists');
             return;
         }
 
@@ -47,7 +37,7 @@ class DeployChain {
 
     ssh() {
         if (!this.hasParameter(this.getConfig().uuid)) {
-            console.log('Key does not exists');
+            this.serverless.cli.log('SSH Key does not exists in Parameter Store');
             return;
         }
 
@@ -84,6 +74,8 @@ class DeployChain {
         if (this.hasParameter(this.getConfig().uuid)) {
             this.exec("aws ssm delete-parameter --name " + this.getConfig().uuid + " --region " + this.getConfig().region + " --profile " + this.getConfig().profile);
         }
+
+        this.exec("rm ~/.ssh/" + this.getConfig().uuid);
     }
 
     /////////

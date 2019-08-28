@@ -221,7 +221,6 @@ ASSET_URL=http://localhost:8080
 <a name="todo"/>
 
 - add queue error / retry  handling
-- add db password rotation rotation 
 
 ## Credits
 <a name="credits"/>
