@@ -32,11 +32,13 @@ jobs:
     - run:
         name: Serverless deployment
         command: |
-          BRANCH=$(echo $CIRCLE_BRANCH | sed -e 's/\//-/g')
+          echo "export BRANCH=$(echo $CIRCLE_BRANCH | sed -e 's/\//-/g')" >> $BASH_ENV
           serverless deploy --stage $BRANCH
     - run:
         name: Run Smoke Tests
         command: |
-          URL="$(serverless info --verbose  --stage $BRANCH | grep ServiceEndpoint | sed s/ServiceEndpoint\:\ //g)"
-          echo run smoke test with $URL/smoke-test
-          wget --content-on-error -qO- ${URL}/smoke-test
+          SLS_URL="$(serverless info --verbose  --stage $BRANCH | grep ServiceEndpoint | sed s/ServiceEndpoint\:\ //g)"
+          echo "export SLS_URL=$SLS_URL" >> $BASH_ENV
+          echo "run smoke test with ${SLS_URL}/smoke-test"
+          wget --content-on-error -qO- ${SLS_URL}/smoke-test
+
