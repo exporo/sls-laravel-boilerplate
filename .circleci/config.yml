@@ -32,5 +32,5 @@ jobs:
     - run:
         name: Serverless deployment
         command: |
-          BRANCH = $(echo $CIRCLE_BRANCH | sed -e 's/\//-/g')
-          serverless deploy --stage ${BRANCH}
+          BRANCH=$(echo $CIRCLE_BRANCH | sed -e 's/\//-/g')
+          serverless deploy --stage $BRANCH
