@@ -88,7 +88,7 @@ class DeployChain {
     getMySqlHost() {
         let IP = null;
 
-        const instances = JSON.parse(this.exec("aws rds describe-db-clusters --max-items 200 --region " + this.getConfig().region + " --profile " + this.getConfig().profile));
+        const instances = JSON.parse(this.exec("aws rds describe-db-clusters --max-items 200 --region " + this.getConfig().region + this.setProfileArgument()));
 
         instances.DBClusters.forEach(item => {
             if (item.Status === 'available') {
@@ -102,7 +102,7 @@ class DeployChain {
     getBastionHostIP() {
         let IP = null;
 
-        const instances = JSON.parse(this.exec("aws ec2 describe-instances --filters 'Name=tag:Name,Values=" + this.getConfig().uuid + "' --region " + this.getConfig().region + " --profile " + this.getConfig().profile));
+        const instances = JSON.parse(this.exec("aws ec2 describe-instances --filters 'Name=tag:Name,Values=" + this.getConfig().uuid + "' --region " + this.getConfig().region + this.setProfileArgument()));
 
         instances.Reservations.forEach(item => {
             item.Instances.forEach(instance => {
@@ -120,12 +120,18 @@ class DeployChain {
             uuid: this.serverless.service.custom.UUID,
             stage: this.serverless.service.custom.STAGE,
             region: this.serverless.service.custom.REGION,
-            profile: process.env.AWS_PROFILE || this.options['aws-profile'] || this.serverless.service.custom.PROFILE
+            profile: process.env.AWS_PROFILE || this.options['aws-profile']
         };
     }
 
+    setProfileArgument() {
+        if (this.getConfig().profile) {
+            return ' --profile' + this.getConfig().profile;
+        }
+    }
+
     hasKey(name) {
-        const items = JSON.parse(this.exec("aws ec2 describe-key-pairs --filters 'Name=key-name,Values=" + name + "' --region " + this.getConfig().region + " --profile " + this.getConfig().profile));
+        const items = JSON.parse(this.exec("aws ec2 describe-key-pairs --filters 'Name=key-name,Values=" + name + "' --region " + this.getConfig().region + this.setProfileArgument()));
 
         if (items.KeyPairs.length && items.KeyPairs.filter(key => {
             return key.KeyName === name
@@ -135,7 +141,7 @@ class DeployChain {
     }
 
     hasParameter(name) {
-        const items = JSON.parse(this.exec("aws ssm describe-parameters --filters 'Key=Name,Values=" + name + "' --region " + this.getConfig().region + " --profile " + this.getConfig().profile));
+        const items = JSON.parse(this.exec("aws ssm describe-parameters --filters 'Key=Name,Values=" + name + "' --region " + this.getConfig().region + this.setProfileArgument()));
 
         if (items.Parameters.length && items.Parameters.filter(key => {
             return key.Name === name
