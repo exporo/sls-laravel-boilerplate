@@ -48,7 +48,7 @@ All resources were paid in a pay as you go model.
 
 Since all resources are located in private subnets and hosted in a VPC, an EC2 instance is placed in a public subnet as a bastion host and NAT instance.
 The NAT instance replaces a NAT gateway (~ 40€/month) with which Lambda functions can access the Internet. 
-The instance type is t2.nano and costs about 5 € per month. 
+The instance type is t2.nano and costs about 5€ per month. 
 
 Some load tests around RDS Aurora Serverless ACUs sizes can be found [here](https://dev.tech.exporo.com/blog/serverless-laravel-rds-serverless-benchmark/).
 
