@@ -16,6 +16,7 @@ jobs:
         command: |
           echo "export STAGE=$(echo $CIRCLE_BRANCH | sed -e 's/\//-/g')" >> $BASH_ENV
           source $BASH_ENV
+          echo "STAGE: $STAGE"
     - run:
         name: Install Infrastructure Composer
         command: |
