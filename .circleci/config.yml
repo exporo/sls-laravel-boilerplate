@@ -34,3 +34,7 @@ jobs:
         command: |
           BRANCH=$(echo $CIRCLE_BRANCH | sed -e 's/\//-/g')
           serverless deploy --stage $BRANCH
+    - run:
+        name: Run Smoke Tests
+        command: |
+          curl https://uersrr98nb.execute-api.eu-central-1.amazonaws.com/feature-smoke-test/smoke-test
