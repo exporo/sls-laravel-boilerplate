@@ -32,8 +32,5 @@ jobs:
     - run:
         name: Serverless deployment
         command: |
-          serverless deploy --stage ${CIRCLE_BRANCH}
-    - run:
-        name: Serverless remove
-        command: |
-          serverless remove --stage ${CIRCLE_BRANCH}
+          BRANCH = $(echo $CIRCLE_BRANCH | sed -e 's/\//-/g')
+          serverless deploy --stage ${BRANCH}
