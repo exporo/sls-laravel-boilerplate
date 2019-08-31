@@ -25,3 +25,12 @@ jobs:
         command: |
           cd application
           composer install
+    - run:
+        name: Install Serverless
+        command: |
+          sudo npm install -g serverless
+    - run:
+        name: Serverless deployment
+        command: |
+          BRANCH=$(echo $CIRCLE_BRANCH | sed -e 's/\//-/g')
+          serverless deploy --stage $BRANCH

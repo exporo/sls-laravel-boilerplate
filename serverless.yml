@@ -191,16 +191,21 @@ resources:
       Properties:
         DisableApiTermination: false
         KeyName: ${self:custom.UUID}
-        ImageId: ami-e2526d09
+        ImageId: ami-0097b5eb
         InstanceType: t2.nano
         Monitoring: false
-        UserData: !Base64 'yum install mysql --assumeyes && shutdown -h now'
+        SourceDestCheck: false
+        UserData:
+          Fn::Base64: !Sub |
+            #!/bin/bash
+            yum -y update
+            yum install mysql --assumeyes
         Tags:
         - Key: Name
           Value: ${self:custom.UUID}
         NetworkInterfaces:
         - SubnetId:
-            Ref: ServerlessSubnetA
+            Ref: ServerlessSubnetP
           AssociatePublicIpAddress: 'true'
           DeviceIndex: '0'
           GroupSet:
@@ -209,7 +214,6 @@ resources:
     #S3 Storage Bucket
     S3Bucket:
       Type: AWS::S3::Bucket
-
       DeletionPolicy: Retain
       Properties:
         AccessControl: Private
@@ -283,7 +287,7 @@ resources:
         CidrBlock: ${self:custom.VPC_CIDR}.0.0.0/24
         Tags:
         - Key: Name
-          Value: ${self:custom.UUID}
+          Value: ${self:custom.UUID}-a
     ServerlessSubnetB:
       DependsOn: ServerlessVPC
       Type: AWS::EC2::Subnet
@@ -294,7 +298,7 @@ resources:
         CidrBlock: ${self:custom.VPC_CIDR}.0.1.0/24
         Tags:
         - Key: Name
-          Value: ${self:custom.UUID}
+          Value: ${self:custom.UUID}-b
     ServerlessSubnetC:
       DependsOn: ServerlessVPC
       Type: AWS::EC2::Subnet
@@ -305,7 +309,19 @@ resources:
         CidrBlock: ${self:custom.VPC_CIDR}.0.2.0/24
         Tags:
         - Key: Name
-          Value: ${self:custom.UUID}
+          Value: ${self:custom.UUID}-c
+    ServerlessSubnetP:
+      DependsOn: ServerlessVPC
+      Type: AWS::EC2::Subnet
+      Properties:
+        VpcId:
+          Ref: ServerlessVPC
+        MapPublicIpOnLaunch: true
+        AvailabilityZone: ${self:provider.region}c
+        CidrBlock: ${self:custom.VPC_CIDR}.0.3.0/24
+        Tags:
+        - Key: Name
+          Value: ${self:custom.UUID}-public
 
     DynamoDBEndpoint:
       Type: "AWS::EC2::VPCEndpoint"
@@ -364,12 +380,30 @@ resources:
         - Key: Name
           Value: ${self:custom.UUID}
 
-    ServerlessRoute:
+    ServerlessPublicRTB:
+      Type: AWS::EC2::RouteTable
+      Properties:
+        VpcId:
+          Ref: ServerlessVPC
+        Tags:
+        - Key: Name
+          Value: ${self:custom.UUID}-public
+
+    ServerlessRoutePublic:
       Type: AWS::EC2::Route
       Properties:
         DestinationCidrBlock: 0.0.0.0/0
         GatewayId:
           Ref: ServerlessIGW
+        RouteTableId:
+          Ref: ServerlessPublicRTB
+
+    ServerlessRoute:
+      Type: AWS::EC2::Route
+      Properties:
+        DestinationCidrBlock: 0.0.0.0/0
+        InstanceId:
+          Ref: BastionHost
         RouteTableId:
           Ref: ServerlessRTB
 
@@ -396,6 +430,14 @@ resources:
           Ref: ServerlessRTB
         SubnetId:
           Ref: ServerlessSubnetC
+
+    ServerlessSubnetRTAP:
+      Type: AWS::EC2::SubnetRouteTableAssociation
+      Properties:
+        RouteTableId:
+          Ref: ServerlessPublicRTB
+        SubnetId:
+          Ref: ServerlessSubnetP
 
 package:
   exclude:
