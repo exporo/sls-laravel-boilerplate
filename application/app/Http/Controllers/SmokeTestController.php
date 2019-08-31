@@ -49,13 +49,11 @@ class SmokeTestController extends Controller
         Storage::put($tmpFileName, 'test');
         $fileUrl = Storage::url($tmpFileName);
 
-        echo $fileUrl;
-
         try {
             $response = $this->guzzle->get($fileUrl, ['http_errors' => false]);
         } catch (Exception $e) {
         } finally {
-            if (isset($response) && $response->getStatusCode() === 200) {
+            if (isset($response) && $response->getStatusCode() !== 403) {
                 return $this->tests['failed'][] = __FUNCTION__;
             }
         }
