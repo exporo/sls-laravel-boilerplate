@@ -37,4 +37,5 @@ jobs:
     - run:
         name: Run Smoke Tests
         command: |
-          wget --content-on-error -qO- https://uersrr98nb.execute-api.eu-central-1.amazonaws.com/feature-smoke-test/smoke-test
+          URL="$(serverless info --verbose  --stage $BRANCH | grep ServiceEndpoint | sed s/ServiceEndpoint\:\ //g)"
+          wget --content-on-error -qO- ${URL}/smoke-test
