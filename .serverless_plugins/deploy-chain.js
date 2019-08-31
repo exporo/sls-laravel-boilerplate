@@ -31,8 +31,8 @@ class DeployChain {
             return;
         }
 
-        const pem = JSON.parse(this.exec("aws ec2 create-key-pair --key-name " + this.getConfig().uuid + " --region " + this.getConfig().region + " --profile " + this.getConfig().profile));
-        this.exec("aws ssm put-parameter --name " + this.getConfig().uuid + " --type String --value '" + pem.KeyMaterial + "' --overwrite --region " + this.getConfig().region + " --profile " + this.getConfig().profile);
+        const pem = JSON.parse(this.exec("aws ec2 create-key-pair --key-name " + this.getConfig().uuid + " --region " + this.getConfig().region + this.setProfileArgument()));
+        this.exec("aws ssm put-parameter --name " + this.getConfig().uuid + " --type String --value '" + pem.KeyMaterial + "' --overwrite --region " + this.getConfig().region + this.setProfileArgument());
     }
 
     ssh() {
@@ -41,7 +41,7 @@ class DeployChain {
             return;
         }
 
-        const key = JSON.parse(this.exec("aws ssm get-parameter --name " + this.getConfig().uuid + " --region " + this.getConfig().region + " --profile " + this.getConfig().profile));
+        const key = JSON.parse(this.exec("aws ssm get-parameter --name " + this.getConfig().uuid + " --region " + this.getConfig().region + this.setRegionArgument()));
         const keyFile = "~/.ssh/" + this.getConfig().uuid;
         this.exec("echo '" + key.Parameter.Value + "' >> " + keyFile);
         this.exec("chmod 600 " + keyFile);
@@ -126,7 +126,13 @@ class DeployChain {
 
     setProfileArgument(argumentName = '--profile') {
         if (this.getConfig().profile) {
-            return ' ' + argumentName + '' + this.getConfig().profile;
+            return ' ' + argumentName + ' ' + this.getConfig().profile;
+        }
+    }
+
+    setRegionArgument() {
+        if (this.getConfig().profile) {
+            return ' --region ' + this.getConfig().profile;
         }
     }
 
