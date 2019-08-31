@@ -10,7 +10,7 @@ jobs:
     - run:
         name: Install AWS CLI
         command: |
-          sudo apt-get awscli
+          sudo apt-get install awscli
     - run:
         name: Define stage name
         command: |
