@@ -62,17 +62,17 @@ class DeployChain {
     }
 
     deployChain() {
-        this.exec("serverless invoke -f artisan --data '{\"cli\":\"migrate --force\"}' --stage " + this.getConfig().stage + " --aws-profile " + this.getConfig().profile + " --region " + this.getConfig().region);
-        this.exec("aws s3 sync ./application/public s3://" + this.getConfig().uuid + "-assets --delete --acl public-read --profile " + this.getConfig().profile + " --region " + this.getConfig().region);
+        this.exec("serverless invoke -f artisan --data '{\"cli\":\"migrate --force\"}' --stage " + this.getConfig().stage + this.setProfileArgument('--aws-profile').profile + " --region " + this.getConfig().region);
+        this.exec("aws s3 sync ./application/public s3://" + this.getConfig().uuid + "-assets --delete --acl public-read " + this.setProfileArgument() + " --region " + this.getConfig().region);
     }
 
     remove() {
         if (this.hasKey(this.getConfig().uuid)) {
-            this.exec("aws ec2 delete-key-pair --key-name " + this.getConfig().uuid + " --region " + this.getConfig().region + " --profile " + this.getConfig().profile);
+            this.exec("aws ec2 delete-key-pair --key-name " + this.getConfig().uuid + " --region " + this.getConfig().region + this.setProfileArgument());
         }
 
         if (this.hasParameter(this.getConfig().uuid)) {
-            this.exec("aws ssm delete-parameter --name " + this.getConfig().uuid + " --region " + this.getConfig().region + " --profile " + this.getConfig().profile);
+            this.exec("aws ssm delete-parameter --name " + this.getConfig().uuid + " --region " + this.getConfig().region + this.setProfileArgument());
         }
 
         this.exec("rm ~/.ssh/" + this.getConfig().uuid);
@@ -81,7 +81,7 @@ class DeployChain {
     /////////
 
     getDBPassword() {
-        const result = JSON.parse(this.exec("aws secretsmanager get-secret-value --secret-id " + this.getConfig().uuid + "-DB_PASSWORD --region " + this.getConfig().region + " --profile " + this.getConfig().profile));
+        const result = JSON.parse(this.exec("aws secretsmanager get-secret-value --secret-id " + this.getConfig().uuid + "-DB_PASSWORD --region " + this.getConfig().region + this.setProfileArgument()));
         return result.SecretString;
     }
 
@@ -124,9 +124,9 @@ class DeployChain {
         };
     }
 
-    setProfileArgument() {
+    setProfileArgument(argumentName = '--profile') {
         if (this.getConfig().profile) {
-            return ' --profile ' + this.getConfig().profile;
+            return ' ' + argumentName + '' + this.getConfig().profile;
         }
     }
 
