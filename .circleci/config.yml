@@ -38,4 +38,5 @@ jobs:
         name: Run Smoke Tests
         command: |
           URL="$(serverless info --verbose  --stage $BRANCH | grep ServiceEndpoint | sed s/ServiceEndpoint\:\ //g)"
+          echo run smoke test with $URL/smoke-test
           wget --content-on-error -qO- ${URL}/smoke-test
