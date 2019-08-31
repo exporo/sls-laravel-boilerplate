@@ -78,7 +78,7 @@ class SmokeTestController extends Controller
     protected function testIfApplicationCanAccessTheInternet()
     {
         try {
-            $response = $this->guzzle->get('https://google,de', ['http_errors' => false]);
+            $response = $this->guzzle->get('https://google.de', ['http_errors' => false]);
         } catch (Exception $e) {
         } finally {
             if (!isset($response) || $response->getStatusCode() !== 200) {
