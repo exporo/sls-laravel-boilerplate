@@ -128,12 +128,16 @@ class DeployChain {
         if (this.getConfig().profile) {
             return ' ' + argumentName + ' ' + this.getConfig().profile;
         }
+
+        return '';
     }
 
     setRegionArgument() {
         if (this.getConfig().region) {
             return ' --region ' + this.getConfig().region;
         }
+
+        return '';
     }
 
     hasKey(name) {
