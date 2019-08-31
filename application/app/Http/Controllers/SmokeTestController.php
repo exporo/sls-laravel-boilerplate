@@ -11,6 +11,11 @@ class SmokeTestController extends Controller
 {
     protected $guzzle;
 
+    protected $tests = [
+        'passed' => [],
+        'failed' => []
+    ];
+
     public function __construct(Client $client)
     {
         $this->guzzle = $client;
@@ -23,6 +28,8 @@ class SmokeTestController extends Controller
                 $this->{$method}();
             }
         }
+
+        return response()->json($this->tests, count($this->tests['failed']) > 0 ? 500 : 200);
     }
 
     protected function testIfDatabaseIsAccessible()
@@ -30,8 +37,10 @@ class SmokeTestController extends Controller
         try {
             CountDb::get()->count();
         } catch (Exception $e) {
-            abort(503, __FUNCTION__);
+            return $this->tests['failed'][] = __FUNCTION__;
         }
+
+        $this->tests['passed'][] = __FUNCTION__;
     }
 
     protected function testIfStorageIsNotPublic()
@@ -47,9 +56,11 @@ class SmokeTestController extends Controller
         } catch (Exception $e) {
         } finally {
             if (isset($response) && $response->getStatusCode() === 200) {
-                abort(503, __FUNCTION__);
+                return $this->tests['failed'][] = __FUNCTION__;
             }
         }
+
+        $this->tests['passed'][] = __FUNCTION__;
     }
 
     protected function testIfAssetsWereAccessible()
@@ -59,9 +70,11 @@ class SmokeTestController extends Controller
         } catch (Exception $e) {
         } finally {
             if (!isset($response) || $response->getStatusCode() !== 200) {
-                abort(503, __FUNCTION__);
+                return $this->tests['failed'][] = __FUNCTION__;
             }
         }
+
+        $this->tests['passed'][] = __FUNCTION__;
     }
 
     protected function testIfApplicationCanAccessTheInternet()
@@ -71,8 +84,10 @@ class SmokeTestController extends Controller
         } catch (Exception $e) {
         } finally {
             if (!isset($response) || $response->getStatusCode() !== 200) {
-                abort(503, __FUNCTION__);
+                return $this->tests['failed'][] = __FUNCTION__;
             }
         }
+
+        $this->tests['passed'][] = __FUNCTION__;
     }
 }
