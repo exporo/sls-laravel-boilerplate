@@ -120,7 +120,7 @@ class DeployChain {
             uuid: this.serverless.service.custom.UUID,
             stage: this.serverless.service.custom.STAGE,
             region: this.serverless.service.custom.REGION,
-            profile: process.env.AWS_PROFILE || this.options['aws-profile']
+            profile: process.env.AWS_PROFILE || this.options['aws-profile'] || this.serverless.service.custom.PROFILE
         };
     }
 

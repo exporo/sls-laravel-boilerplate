@@ -5,6 +5,7 @@ provider:
   name: aws
   runtime: provided
   region: eu-central-1
+  profile: default
   vpc:
     securityGroupIds:
     - Fn::GetAtt: ServerlessVPC.DefaultSecurityGroup
@@ -65,6 +66,7 @@ custom:
   OFFICE_IP: 0.0.0.0/0
   VPC_CIDR: 10
   UUID: ${self:service.name}-${opt:stage, self:provider.stage}
+  PROFILE: ${self:provider.profile}
   REGION: ${opt:region, self:provider.region}
   STAGE: ${opt:stage, self:provider.stage}
   AURORA:

@@ -8,15 +8,19 @@ jobs:
     steps:
     - checkout
     - run:
-        name: Install Infrastructure NPM
+        name: Install AWS CLI
         command: |
-          npm install
+          sudo apt-get awscli
     - run:
         name: Define stage name
         command: |
           echo "export STAGE=$(echo $CIRCLE_BRANCH | sed -e 's/\//-/g')" >> $BASH_ENV
           source $BASH_ENV
           echo "STAGE: $STAGE"
+    - run:
+        name: Install Infrastructure NPM
+        command: |
+          npm install
     - run:
         name: Install Infrastructure Composer
         command: |
