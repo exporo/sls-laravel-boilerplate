@@ -62,9 +62,6 @@ The instance type is t2.nano and costs about 5 € per month.
 ## Installation
 <a name="installation"/>
 
-* Create a  keypair with the name *exporo-sls-laravel* in your AWS account. (AWS Web Console > EC2 > KEYPAIR)
-
-
 ```console
 exporo_sls:~$ aws configure   
 exporo_sls:~$ npm install -g serverless   
@@ -76,12 +73,38 @@ exporo_sls:~$ application/composer install
 ## Deployment
 <a name="deployment"/>
 
+**Deployment**
 ```console
 exporo_sls:~$ php artisan config:clear
 exporo_sls:~$ serverless deploy --stage {stage} --aws-profile default
-exporo_sls:~$ serverless invoke -f artisan --data '{"cli":"migrate --force"}' --stage {stage} --aws-profile default
-exporo_sls:~$ aws s3 sync public s3://${service-name}-${stage}-assets --delete --acl public-read --profile default
 ```
+
+**Deployment chain**  
+A serverless plugin *./serverless_plugins/deploy-chain.js* automatically creates an EC2 key pair and stores it in the AWS Parameter Store.
+After deployment, the following steps were performed:
+```console
+exporo_sls:~$ serverless invoke -f artisan --data '{"cli":"migrate --force"}' --stage {stage} --aws-profile {profile}
+exporo_sls:~$ aws s3 sync ./application/public s3://${service-name}-${stage}-assets --delete --acl public-read --profile {profile}
+```
+
+**Local database access**  
+The same plugin fetches and displays all necessary parameters to access the database: 
+```console
+exporo_sls:~$ serverless ssh --stage {stage} --aws-profile default
+```
+Output:
+```console
+Serverless: -----------------------------
+Serverless: -- SSH Credentials
+Serverless: -----------------------------
+Serverless: ssh ec2-user@18.185.33.123 -i ~/.ssh/exporo-sls-laravel-nat-instance
+Serverless: MySql HOST: exporo-sls-laravel-nat-instance-aurorardscluster-scl4vnp4lyet.cluster-cadypvf3voom.eu-central-1.rds.amazonaws.com
+Serverless: MySql Username: forge
+Serverless: MySql Password: &a%<40I)ln]oo>F7Q]jUG!3OsVb2vM
+Serverless: MySql Database: forge
+```
+
+
 
 ## Assets
 <a name="assets"/>
@@ -200,7 +223,6 @@ ASSET_URL=http://localhost:8080
 <a name="todo"/>
 
 - add queue error / retry  handling
-- add db password rotation rotation 
 - display stderr from scheduled commands 
 
 ## Credits

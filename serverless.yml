@@ -5,6 +5,7 @@ provider:
   name: aws
   runtime: provided
   region: eu-central-1
+  profile: default
   vpc:
     securityGroupIds:
     - Fn::GetAtt: ServerlessVPC.DefaultSecurityGroup
@@ -63,9 +64,11 @@ provider:
 
 custom:
   OFFICE_IP: 0.0.0.0/0
-  KEY_NAME: exporo-sls-laravel2
   VPC_CIDR: 10
-  UUID: "${self:service.name}-${opt:stage, self:provider.stage}"
+  UUID: ${self:service.name}-${opt:stage, self:provider.stage}
+  PROFILE: ${self:provider.profile}
+  REGION: ${opt:region, self:provider.region}
+  STAGE: ${opt:stage, self:provider.stage}
   AURORA:
     DELETE_PROTECTION: false
     MIN_CAPACITY: 1
@@ -187,7 +190,7 @@ resources:
       Type: AWS::EC2::Instance
       Properties:
         DisableApiTermination: false
-        KeyName: ${self:custom.KEY_NAME}
+        KeyName: ${self:custom.UUID}
         ImageId: ami-0097b5eb
         InstanceType: t2.nano
         Monitoring: false
@@ -211,6 +214,7 @@ resources:
     #S3 Storage Bucket
     S3Bucket:
       Type: AWS::S3::Bucket
+      DeletionPolicy: Retain
       Properties:
         AccessControl: Private
         BucketName: "${self:custom.UUID}"
@@ -218,6 +222,7 @@ resources:
     #S3 Public Assets Bucket
     S3PublicAssetsBucket:
       Type: AWS::S3::Bucket
+      DeletionPolicy: Retain
       Properties:
         AccessControl: PublicRead
         BucketName: "${self:custom.UUID}-assets"
@@ -278,7 +283,6 @@ resources:
       Properties:
         VpcId:
           Ref: ServerlessVPC
-        MapPublicIpOnLaunch: true
         AvailabilityZone: ${self:provider.region}a
         CidrBlock: ${self:custom.VPC_CIDR}.0.0.0/24
         Tags:
@@ -290,7 +294,6 @@ resources:
       Properties:
         VpcId:
           Ref: ServerlessVPC
-        MapPublicIpOnLaunch: true
         AvailabilityZone: ${self:provider.region}b
         CidrBlock: ${self:custom.VPC_CIDR}.0.1.0/24
         Tags:
@@ -302,7 +305,6 @@ resources:
       Properties:
         VpcId:
           Ref: ServerlessVPC
-        MapPublicIpOnLaunch: true
         AvailabilityZone: ${self:provider.region}c
         CidrBlock: ${self:custom.VPC_CIDR}.0.2.0/24
         Tags:
@@ -447,3 +449,4 @@ package:
 
 plugins:
 - serverless-pseudo-parameters
+- deploy-chain
