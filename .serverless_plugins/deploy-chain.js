@@ -31,7 +31,7 @@ class DeployChain {
             return;
         }
 
-        const pem = JSON.parse(this.exec("aws ec2 create-key-pair --key-name " + this.getConfig().uuid + " --region " + this.getConfig().region + this.setProfileArgument()));
+        const pem = JSON.parse(this.exec("aws ec2 create-key-pair --key-name " + this.getConfig().uuid + this.setRegionArgument() + this.setProfileArgument()));
         this.exec("aws ssm put-parameter --name " + this.getConfig().uuid + " --type String --value '" + pem.KeyMaterial + "' --overwrite --region " + this.getConfig().region + this.setProfileArgument());
     }
 
@@ -41,7 +41,7 @@ class DeployChain {
             return;
         }
 
-        const key = JSON.parse(this.exec("aws ssm get-parameter --name " + this.getConfig().uuid + " --region " + this.getConfig().region + this.setRegionArgument()));
+        const key = JSON.parse(this.exec("aws ssm get-parameter --name " + this.getConfig().uuid + this.setRegionArgument() + this.setRegionArgument()));
         const keyFile = "~/.ssh/" + this.getConfig().uuid;
         this.exec("echo '" + key.Parameter.Value + "' >> " + keyFile);
         this.exec("chmod 600 " + keyFile);
@@ -62,17 +62,17 @@ class DeployChain {
     }
 
     deployChain() {
-        this.exec("serverless invoke -f artisan --data '{\"cli\":\"migrate --force\"}' --stage " + this.getConfig().stage + this.setProfileArgument('--aws-profile').profile + " --region " + this.getConfig().region);
-        this.exec("aws s3 sync ./application/public s3://" + this.getConfig().uuid + "-assets --delete --acl public-read " + this.setProfileArgument() + " --region " + this.getConfig().region);
+        this.exec("serverless invoke -f artisan --data '{\"cli\":\"migrate --force\"}' --stage " + this.getConfig().stage + this.setProfileArgument('--aws-profile') + this.setRegionArgument());
+        this.exec("aws s3 sync ./application/public s3://" + this.getConfig().uuid + "-assets --delete --acl public-read " + this.setProfileArgument() + this.setRegionArgument());
     }
 
     remove() {
         if (this.hasKey(this.getConfig().uuid)) {
-            this.exec("aws ec2 delete-key-pair --key-name " + this.getConfig().uuid + " --region " + this.getConfig().region + this.setProfileArgument());
+            this.exec("aws ec2 delete-key-pair --key-name " + this.getConfig().uuid + this.setRegionArgument() + this.setProfileArgument());
         }
 
         if (this.hasParameter(this.getConfig().uuid)) {
-            this.exec("aws ssm delete-parameter --name " + this.getConfig().uuid + " --region " + this.getConfig().region + this.setProfileArgument());
+            this.exec("aws ssm delete-parameter --name " + this.getConfig().uuid + this.setRegionArgument() + this.setProfileArgument());
         }
 
         this.exec("rm ~/.ssh/" + this.getConfig().uuid);
@@ -81,14 +81,14 @@ class DeployChain {
     /////////
 
     getDBPassword() {
-        const result = JSON.parse(this.exec("aws secretsmanager get-secret-value --secret-id " + this.getConfig().uuid + "-DB_PASSWORD --region " + this.getConfig().region + this.setProfileArgument()));
+        const result = JSON.parse(this.exec("aws secretsmanager get-secret-value --secret-id " + this.getConfig().uuid + "-DB_PASSWORD " + this.setRegionArgument() + this.setProfileArgument()));
         return result.SecretString;
     }
 
     getMySqlHost() {
         let IP = null;
 
-        const instances = JSON.parse(this.exec("aws rds describe-db-clusters --max-items 200 --region " + this.getConfig().region + this.setProfileArgument()));
+        const instances = JSON.parse(this.exec("aws rds describe-db-clusters --max-items 200 " + this.setRegionArgument() + this.setProfileArgument()));
 
         instances.DBClusters.forEach(item => {
             if (item.Status === 'available') {
@@ -102,7 +102,7 @@ class DeployChain {
     getBastionHostIP() {
         let IP = null;
 
-        const instances = JSON.parse(this.exec("aws ec2 describe-instances --filters 'Name=tag:Name,Values=" + this.getConfig().uuid + "' --region " + this.getConfig().region + this.setProfileArgument()));
+        const instances = JSON.parse(this.exec("aws ec2 describe-instances --filters 'Name=tag:Name,Values=" + this.getConfig().uuid + "'" + this.setRegionArgument() + this.setProfileArgument()));
 
         instances.Reservations.forEach(item => {
             item.Instances.forEach(instance => {
@@ -131,13 +131,13 @@ class DeployChain {
     }
 
     setRegionArgument() {
-        if (this.getConfig().profile) {
-            return ' --region ' + this.getConfig().profile;
+        if (this.getConfig().region) {
+            return ' --region ' + this.getConfig().region;
         }
     }
 
     hasKey(name) {
-        const items = JSON.parse(this.exec("aws ec2 describe-key-pairs --filters 'Name=key-name,Values=" + name + "' --region " + this.getConfig().region + this.setProfileArgument()));
+        const items = JSON.parse(this.exec("aws ec2 describe-key-pairs --filters 'Name=key-name,Values=" + name + "'" + this.setRegionArgument() + this.setProfileArgument()));
 
         if (items.KeyPairs.length && items.KeyPairs.filter(key => {
             return key.KeyName === name
@@ -147,7 +147,7 @@ class DeployChain {
     }
 
     hasParameter(name) {
-        const items = JSON.parse(this.exec("aws ssm describe-parameters --filters 'Key=Name,Values=" + name + "' --region " + this.getConfig().region + this.setProfileArgument()));
+        const items = JSON.parse(this.exec("aws ssm describe-parameters --filters 'Key=Name,Values=" + name + "'" + this.setRegionArgument() + this.setProfileArgument()));
 
         if (items.Parameters.length && items.Parameters.filter(key => {
             return key.Name === name
