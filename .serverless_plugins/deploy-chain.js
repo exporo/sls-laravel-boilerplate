@@ -126,7 +126,7 @@ class DeployChain {
 
     setProfileArgument() {
         if (this.getConfig().profile) {
-            return ' --profile' + this.getConfig().profile;
+            return ' --profile ' + this.getConfig().profile;
         }
     }
 
