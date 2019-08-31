@@ -8,11 +8,16 @@ jobs:
     steps:
     - checkout
     - run:
-        name: Install NPM
+        name: Install Infrastructure NPM
         command: |
           npm install
     - run:
-        name: Install Composer
+        name: Define stage name
+        command: |
+          echo "export STAGE=$(echo $CIRCLE_BRANCH | sed -e 's/\//-/g')" >> $BASH_ENV
+          source $BASH_ENV
+    - run:
+        name: Install Infrastructure Composer
         command: |
           composer install
     - run:
@@ -32,13 +37,11 @@ jobs:
     - run:
         name: Serverless deployment
         command: |
-          echo "export BRANCH=$(echo $CIRCLE_BRANCH | sed -e 's/\//-/g')" >> $BASH_ENV
-          serverless deploy --stage $BRANCH
+          serverless deploy --stage $STAGE
     - run:
         name: Run Smoke Tests
         command: |
-          SLS_URL="$(serverless info --verbose  --stage $BRANCH | grep ServiceEndpoint | sed s/ServiceEndpoint\:\ //g)"
-          echo "export SLS_URL=$SLS_URL" >> $BASH_ENV
+          SLS_URL="$(serverless info --verbose  --stage $STAGE | grep ServiceEndpoint | sed s/ServiceEndpoint\:\ //g)"
           echo "run smoke test with ${SLS_URL}/smoke-test"
           wget --content-on-error -qO- ${SLS_URL}/smoke-test
 
