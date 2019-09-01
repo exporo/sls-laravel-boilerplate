@@ -1,0 +1,12 @@
+/vendor
+/node_modules
+/.idea
+/.serverless
+composer.lock
+package-lock.json
+/data
+
+application/node_modules
+application/vendor
+application/.env
+application/composer.lock

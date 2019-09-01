@@ -1,0 +1,172 @@
+version: 2
+jobs:
+  build:
+    working_directory: ~/sls
+    docker:
+    - image: circleci/php:7.3-apache-node-browsers-legacy
+    steps:
+    - checkout
+    - attach_workspace:
+        at: ~/sls
+    - run:
+        name: Define stage name
+        command: |
+          echo "export STAGE=$(echo $CIRCLE_BRANCH | sed -e 's/\//-/g')" >> $BASH_ENV
+          source $BASH_ENV
+          echo "export STAGE=$STAGE" >> envVars
+          echo "STAGE: $STAGE"
+    - run:
+        name: Install Infrastructure NPM
+        command: |
+          npm install
+    - run:
+        name: Install Infrastructure Composer
+        command: |
+          composer install
+    - run:
+        name: Install Application NPM
+        command: |
+          cd application
+          npm install
+    - run:
+        name: Install Application Composer
+        command: |
+          cd application
+          composer install
+    - run:
+        name: Install Serverless
+        command: |
+          sudo npm install -g serverless
+    - persist_to_workspace:
+        root: .
+        paths: .
+  test:
+    working_directory: ~/sls
+    docker:
+    - image: circleci/php:7.3-apache-node-browsers-legacy
+    steps:
+    - attach_workspace:
+        at: ~/sls
+    - run:
+        Name: Set Global Env Vars
+        command: |
+          cat envVars >> $BASH_ENV
+    - run:
+        name: Run PHPUnit
+        command: |
+          cd application
+          vendor/bin/phpunit
+
+  deploy:
+    working_directory: ~/sls
+    docker:
+    - image: circleci/php:7.3-apache-node-browsers-legacy
+    steps:
+    - attach_workspace:
+        at: ~/sls
+    - run:
+        name: Install Serverless
+        command: |
+          sudo npm install -g serverless
+    - run:
+        Name: Set Global Env Vars
+        command: |
+          cat envVars >> $BASH_ENV
+    - run:
+        name: Install AWS CLI
+        command: |
+          sudo apt-get install awscli
+    - run:
+        name: Serverless domain manager create domain
+        command: |
+          serverless create_domain --stage $STAGE
+    - run:
+        name: Serverless deployment
+        command: |
+          serverless deploy --stage $STAGE
+
+  smokeTest:
+    working_directory: ~/sls
+    docker:
+    - image: circleci/php:7.3-apache-node-browsers-legacy
+    steps:
+    - attach_workspace:
+        at: ~/sls
+    - run:
+        name: Install Serverless
+        command: |
+          sudo npm install -g serverless
+    - run:
+        Name: Set Global Env Vars
+        command: |
+          cat envVars >> $BASH_ENV
+    - run:
+        name: Run Smoke Tests
+        command: |
+          SLS_URL="$(serverless info --verbose  --stage $STAGE | grep ServiceEndpoint | sed s/ServiceEndpoint\:\ //g)"
+          echo "run smoke test with ${SLS_URL}/smoke-test"
+          wget --content-on-error -qO- ${SLS_URL}/smoke-test
+
+  deployProd:
+    working_directory: ~/sls
+    docker:
+    - image: circleci/php:7.3-apache-node-browsers-legacy
+    steps:
+    - attach_workspace:
+        at: ~/sls
+    - run:
+        Name: Set Global Env Vars
+        command: |
+          cat envVars >> $BASH_ENV
+    - run:
+        name: Install Serverless
+        command: |
+          sudo npm install -g serverless
+    - run:
+        name: Install AWS CLI
+        command: |
+          sudo apt-get install awscli
+    - run:
+        name: Serverless domain manager create domain
+        command: |
+          serverless create_domain --stage production
+    - run:
+        name: Serverless deployment
+        command: |
+          serverless deploy --stage production
+    - run:
+        name: Set delete protection
+        command: |
+          echo "TODO"
+
+workflows:
+  version: 2
+  build-and-deploy:
+    jobs:
+    - build
+    - test:
+        requires:
+        - build
+
+    - deploy:
+        requires:
+        - test
+
+    - smokeTest:
+        requires:
+        - deploy
+
+    - hold:
+        type: approval
+        requires:
+        - smokeTest
+        filters:
+          branches:
+            only: master
+
+    - deployProd:
+        requires:
+        - hold
+        filters:
+          branches:
+            only: master

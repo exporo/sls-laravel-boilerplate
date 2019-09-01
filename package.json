@@ -1,0 +1,25 @@
+{
+  "name": "bref-laravel-demo",
+  "version": "1.0.0",
+  "description": "",
+  "main": "webpack.mix.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mnapoli/bref-laravel-demo.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mnapoli/bref-laravel-demo/issues"
+  },
+  "homepage": "https://github.com/mnapoli/bref-laravel-demo#readme",
+  "dependencies": {
+    "serverless-pseudo-parameters": "^2.4.0"
+  },
+  "devDependencies": {
+    "serverless-domain-manager": "2.6.13"
+  }
+}
