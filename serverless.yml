@@ -160,9 +160,9 @@ resources:
 
     AuroraRDSCluster:
       DependsOn: DBSecret
+      UpdateReplacePolicy: Snapshot
       Type: "AWS::RDS::DBCluster"
       Properties:
-        UpdateReplacePolicy: Snapshot
         MasterUsername: forge
         MasterUserPassword: !Sub "{{resolve:secretsmanager:${self:custom.UUID}-DB_PASSWORD}}"
         DBSubnetGroupName:
