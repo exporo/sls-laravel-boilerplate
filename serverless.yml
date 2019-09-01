@@ -67,13 +67,24 @@ custom:
   REGION: ${opt:region, self:provider.region}
   STAGE: ${opt:stage, self:provider.stage}
   customDomain:
-    domainName: ${opt:stage, self:provider.stage}.techdev2.exporo.de
-
+    serverlessIfElse:
+    - If: '"${self:custom.currentStage}" == "production"'
+      Set:
+        domainName: techdev2.exporo.de
+      ElseSet:
+        domainName: ${opt:stage, self:provider.stage}.techdev2.exporo.de
   AURORA:
-    DELETE_PROTECTION: false
     MIN_CAPACITY: 1
-    MAX_CAPACITY: 1
+    MAX_CAPACITY: 8
     AUTO_PAUSE_SECONDS: 600
+    - If: '"${self:custom.currentStage}" == "production"'
+      Set:
+        DELETE_PROTECTION: true
+        AUTO_PAUSE: false
+      ElseSet:
+        AUTO_PAUSE: true
+        DELETE_PROTECTION: false
+
 
 functions:
   website:
@@ -151,6 +162,7 @@ resources:
       DependsOn: DBSecret
       Type: "AWS::RDS::DBCluster"
       Properties:
+        UpdateReplacePolicy: Snapshot
         MasterUsername: forge
         MasterUserPassword: !Sub "{{resolve:secretsmanager:${self:custom.UUID}-DB_PASSWORD}}"
         DBSubnetGroupName:
@@ -164,7 +176,7 @@ resources:
         ScalingConfiguration:
           MinCapacity: ${self:custom.AURORA.MIN_CAPACITY}
           MaxCapacity: ${self:custom.AURORA.MAX_CAPACITY}
-          AutoPause: true
+          AutoPause: ${self:custom.AURORA.AUTO_PAUSE}
           SecondsUntilAutoPause: ${self:custom.AURORA.AUTO_PAUSE_SECONDS}
         VpcSecurityGroupIds:
         - Fn::GetAtt: ServerlessVPC.DefaultSecurityGroup
@@ -222,7 +234,6 @@ resources:
     #S3 Public Assets Bucket
     S3PublicAssetsBucket:
       Type: AWS::S3::Bucket
-      DeletionPolicy: Retain
       Properties:
         AccessControl: PublicRead
         BucketName: "${self:custom.UUID}-assets"
