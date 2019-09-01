@@ -67,23 +67,23 @@ custom:
   REGION: ${opt:region, self:provider.region}
   STAGE: ${opt:stage, self:provider.stage}
   customDomain:
+    domainName: ${opt:stage, self:provider.stage}.techdev2.exporo.de
     serverlessIfElse:
-    - If: '"${self:custom.currentStage}" == "production"'
-      Set:
-        domainName: techdev2.exporo.de
-      ElseSet:
-        domainName: ${opt:stage, self:provider.stage}.techdev2.exporo.de
+      - If: '"${opt:stage, self:provider.stage}" == "production"'
+        Set:
+          domainName: techdev2.exporo.de
+
   AURORA:
     MIN_CAPACITY: 1
     MAX_CAPACITY: 8
     AUTO_PAUSE_SECONDS: 600
-    - If: '"${self:custom.currentStage}" == "production"'
-      Set:
-        DELETE_PROTECTION: true
-        AUTO_PAUSE: false
-      ElseSet:
-        AUTO_PAUSE: true
-        DELETE_PROTECTION: false
+    DELETE_PROTECTION: false
+    AUTO_PAUSE: true
+    serverlessIfElse:
+      - If: '"${opt:stage, self:provider.stage}" == "production"'
+        Set:
+          AUTO_PAUSE: false
+          DELETE_PROTECTION: true
 
 
 functions:

@@ -15,14 +15,28 @@ class DeployChain {
                     }
                 }
             },
+            protectTermination: {
+                lifecycleEvents: ['enable'],
+                options: {
+                    verbose: {
+                        usage: 'Increase verbosity',
+                        shortcut: 'v'
+                    }
+                }
+            },
         };
 
         this.hooks = {
             'ssh:show': () => Promise.resolve().then(this.ssh.bind(this)),
+            'protectTermination:enable': () => Promise.resolve().then(this.setTerminationProtection.bind(this)),
             'before:deploy:deploy': () => Promise.resolve().then(this.upsertKeyPair.bind(this)),
             'after:deploy:deploy': () => Promise.resolve().then(this.deployChain.bind(this)),
             'remove:remove': () => Promise.resolve().then(this.remove.bind(this)),
         };
+    }
+
+    setTerminationProtection() {
+        this.exec("aws cloudformation update-termination-protection --enable-termination-protection --stack-name " + this.getConfig().uuid + this.setRegionArgument() + this.setProfileArgument());
     }
 
     upsertKeyPair() {
@@ -41,7 +55,7 @@ class DeployChain {
             return;
         }
 
-        const key = JSON.parse(this.exec("aws ssm get-parameter --name " + this.getConfig().uuid + this.setRegionArgument() + this.setRegionArgument()));
+        const key = JSON.parse(this.exec("aws ssm get-parameter --name " + this.getConfig().uuid + this.setRegionArgument() + this.setProfileArgument()));
         const keyFile = "~/.ssh/" + this.getConfig().uuid;
         this.exec("echo '" + key.Parameter.Value + "' >> " + keyFile);
         this.exec("chmod 600 " + keyFile);
