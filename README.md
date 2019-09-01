@@ -21,7 +21,7 @@
 We are currently developing a boilerplate for hosting a typical Laravel application serverless in the AWS Cloud. 
 We have combined the serverless.com framework, bref AWS Lambda and some AWS Cloudformation scripts to accomplish this. 
 All AWS resources have been written as Infrastructure as Code. They are being used natively without the need to access passwords or secrets by hand. 
-BTW: If you'd like to know why we're not betting on Tyler Otwell's Vapor to accomplish what we can, read on [here](https://dev.tech.exporo.com/blog/sls-laravel-agility/).. 
+BTW: If you'd like to know why we're not betting on Tyler Otwell's Vapor to accomplish what we can, read on [here](https://tech.exporo.com/blog/sls-laravel-agility/).. 
 
 All resources are defined as a Cloudformation template in the serverless.yml file:
 ```yml
@@ -56,7 +56,7 @@ Since all resources are located in private subnets and hosted in a VPC, an EC2 i
 The NAT instance replaces a NAT gateway (~ 40€/month) with which Lambda functions can access the Internet. 
 The instance type is t2.nano and costs about 5€ per month. 
 
-Some load tests around RDS Aurora Serverless ACUs sizes can be found [here](https://dev.tech.exporo.com/blog/serverless-laravel-rds-serverless-benchmark/).
+Some load tests around RDS Aurora Serverless ACUs sizes can be found [here](https://tech.exporo.com/blog/serverless-laravel-rds-serverless-benchmark/).
 
 In some places this project is still a bit raw, because it is still quite new, so **feel free to contribute!**
  
