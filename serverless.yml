@@ -66,25 +66,29 @@ custom:
   UUID: ${self:service.name}-${opt:stage, self:provider.stage}
   REGION: ${opt:region, self:provider.region}
   STAGE: ${opt:stage, self:provider.stage}
+
   customDomain:
-    domainName: ${opt:stage, self:provider.stage}.techdev2.exporo.de
-    serverlessIfElse:
-      - If: '"${opt:stage, self:provider.stage}" == "production"'
-        Set:
-          domainName: techdev2.exporo.de
+    domainName: ${self:custom.customDomain.SWITCH.${opt:stage, self:provider.stage}.domainName , '${self:custom.customDomain.SWITCH.default.domainName}'}
+    SWITCH:
+      baseDomain: techdev2.exporo.de
+      default:
+        domainName: ${opt:stage, self:provider.stage}.${self:custom.customDomain.SWITCH.baseDomain}
+      production:
+        domainName: ${self:custom.customDomain.SWITCH.baseDomain}
 
   AURORA:
     MIN_CAPACITY: 1
     MAX_CAPACITY: 8
     AUTO_PAUSE_SECONDS: 600
-    DELETE_PROTECTION: false
-    AUTO_PAUSE: true
-    serverlessIfElse:
-      - If: '"${opt:stage, self:provider.stage}" == "production"'
-        Set:
-          AUTO_PAUSE: false
-          DELETE_PROTECTION: true
-
+    DELETE_PROTECTION: ${self:custom.AURORA.SWITCH.${opt:stage, self:provider.stage}.DELETE_PROTECTION , '${self:custom.AURORA.SWITCH.default.DELETE_PROTECTION}'}
+    AUTO_PAUSE: ${self:custom.AURORA.SWITCH.${opt:stage, self:provider.stage}.AUTO_PAUSE , '${self:custom.AURORA.SWITCH.default.AUTO_PAUSE}'}
+    SWITCH:
+      production:
+        AUTO_PAUSE: false
+        DELETE_PROTECTION: true
+      default:
+        AUTO_PAUSE: 'true'
+        DELETE_PROTECTION: 'false'
 
 functions:
   website:

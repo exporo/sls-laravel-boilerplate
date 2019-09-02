@@ -20,7 +20,6 @@
     "serverless-pseudo-parameters": "^2.4.0"
   },
   "devDependencies": {
-    "serverless-domain-manager": "2.6.13",
-    "serverless-plugin-ifelse": "^1.0.4"
+    "serverless-domain-manager": "2.6.13"
   }
 }
