@@ -68,7 +68,7 @@ custom:
   STAGE: ${opt:stage, self:provider.stage}
 
   customDomain:
-    domainName: ${self:custom.customDomain.switch.${opt:stage, self:provider.stage}.domainName , '${self:custom.customDomain.swicth.default.domainName}'}
+    domainName: ${self:custom.customDomain.switch.${opt:stage, self:provider.stage}.domainName , '${self:custom.customDomain.switch.default.domainName}'}
     switch:
       baseDomain: techdev2.exporo.de
       default:
