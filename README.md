@@ -12,6 +12,7 @@
 [Demo application](#demo)  
 [Migrate your application](#migration)  
 [CI/CD](#CICD)  
+[TODOs](#todo)   
 [Credits](#credits)  
 
 
@@ -92,6 +93,7 @@ exporo_sls:~$ serverless deploy --stage {stage} --aws-profile default
 
 **Deployment chain**  
 A serverless plugin *./serverless_plugins/deploy-chain.js* automatically creates an EC2 key pair and stores it in the AWS Parameter Store.
+This plugin is still quite raw and the aws cli commands could generally be exchanged for the AWS SDK.
 After deployment, the following steps were performed:
 ```console
 exporo_sls:~$ serverless invoke -f artisan --data '{"cli":"migrate --force"}' --stage {stage} --aws-profile {profile}
@@ -229,14 +231,94 @@ DB_DATABASE=forge
 ASSET_URL=http://localhost:8080
 ```
 
-## Todo
+## CI/CD
+<a name="CICD"/>
+
+### CircleCI Jobs
+We also added an exemplary CircleCi pipeline in this boilerplate.
+This consists of the following jobs:
+
+**build => test => deploy => smoke test**
+
+If the branch is the master, two more jobs will be added:
+
+***build => test => deploy => smoke test => approval button => deploy to production**
+
+The deploy job deploys the respective one into your AWS account and creates a corresponding subdomain at the same time:
+**{BranchName}.{BaseDomain}**
+
+The branch name consists of the first 11 characters of the branch. Unfortunately we have to do this because we have run into an AWS limit because our service name "exporo-sls-laravel" and the full branch name have exceeded a character limit.
+
+*.circleci/config.yml*
+```
+- run:
+    name: Define stage name
+    command: |
+      echo "export STAGE=$(echo $CIRCLE_BRANCH | cut -c1-11 | sed -e 's/\//-/g')" >> $BASH_ENV
+      echo "export STAGE=$STAGE" >> envVars
+      echo "STAGE: $STAGE"
+```
+
+The Basedomain is configured in the *serverless.yml* file.
+As you can see, a production deployment does not use a subdomain but directly the basedomain:
+```
+customDomain:
+    domainName: ${self:custom.customDomain.switch.${opt:stage, self:provider.stage}.domainName , '${self:custom.customDomain.swicth.default.domainName}'}
+    swicth:
+      baseDomain: techdev2.exporo.de
+      default:
+        domainName: ${opt:stage, self:provider.stage}.${self:custom.customDomain.switch.baseDomain}
+      production:
+        domainName: ${self:custom.customDomain.switch.baseDomain}
+```
+
+Another difference with a production deployment are some RDS Aurora settings in the *serverless.yml*:
+
+```
+AURORA:
+    MIN_CAPACITY: 1
+    MAX_CAPACITY: 8
+    AUTO_PAUSE_SECONDS: 600
+    DELETE_PROTECTION: ${self:custom.AURORA.SWITCH.${opt:stage, self:provider.stage}.DELETE_PROTECTION , '${self:custom.AURORA.SWITCH.default.DELETE_PROTECTION}'}
+    AUTO_PAUSE: ${self:custom.AURORA.SWITCH.${opt:stage, self:provider.stage}.AUTO_PAUSE , '${self:custom.AURORA.SWITCH.default.AUTO_PAUSE}'}
+    SWITCH:
+      production:
+        AUTO_PAUSE: false
+        DELETE_PROTECTION: true
+      default:
+        AUTO_PAUSE: 'true'
+        DELETE_PROTECTION: 'false'
+```
+
+We have configured the database so that it does not pause in a production environment. Furthermore, it can not be simply deleted by cloudformation.
+The same is done for the complete cloudformation stack in the CircleCi deploy prod job with protectTermination command.
+The protectTermination command is also implemented in our deploy chain plugin.
+
+```
+- run:
+    name: Set delete protection
+    command: |
+      serverless protectTermination --stage production
+```
+
+
+### Domain registration 
+For registering subdomains for the different stacks we use the [serverless-domain-manager](https://www.npmjs.com/package/serverless-domain-manager) plugin.
+If you don't have a domain in your AWS account you can simply delete this plugin from the servless.yml file. If you use the CircleCI template remove this command "serverless create_domain" from the Deploy Jobs.
+
+### Smoke Test 
+To test the deployed infrastructure, e.g. if the Lambda function has access to the internet or the Storage S3 Bucket does not allow public access, we wrote a SmokeTestController. This is checked in a CircleCi job.
+*application/app/Http/Controllers/SmokeTestController.php*
+
+
+
+## TODOs
 <a name="todo"/>
 
 - add queue error / retry  handling
 - display stderr from scheduled commands 
+- remove unused/merged stacks
 
-## CI/CD
-<a name="CICD"/>
 
 ## Credits
 <a name="credits"/>

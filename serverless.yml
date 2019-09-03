@@ -68,13 +68,13 @@ custom:
   STAGE: ${opt:stage, self:provider.stage}
 
   customDomain:
-    domainName: ${self:custom.customDomain.SWITCH.${opt:stage, self:provider.stage}.domainName , '${self:custom.customDomain.SWITCH.default.domainName}'}
-    SWITCH:
+    domainName: ${self:custom.customDomain.switch.${opt:stage, self:provider.stage}.domainName , '${self:custom.customDomain.swicth.default.domainName}'}
+    swicth:
       baseDomain: techdev2.exporo.de
       default:
-        domainName: ${opt:stage, self:provider.stage}.${self:custom.customDomain.SWITCH.baseDomain}
+        domainName: ${opt:stage, self:provider.stage}.${self:custom.customDomain.switch.baseDomain}
       production:
-        domainName: ${self:custom.customDomain.SWITCH.baseDomain}
+        domainName: ${self:custom.customDomain.switch.baseDomain}
 
   AURORA:
     MIN_CAPACITY: 1
