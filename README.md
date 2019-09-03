@@ -142,8 +142,8 @@ Another docker container, for the delivery of the assets, with the address local
 
 ```console
 exporo_sls:~$ docker-compose up -d
-exporo_sls:~$ docker-compose exec php bash
 exporo_sls:~$ open http://localhost
+exporo_sls:~$ docker-compose exec php bash
 bash-4.2# cd /var/task/application/
 bash-4.2# php artisan XYZ
 ```
@@ -291,7 +291,7 @@ AURORA:
 ```
 
 We have configured the database so that it does not pause in a production environment. Furthermore, it can not be simply deleted by cloudformation.
-The same is done for the complete cloudformation stack in the CircleCi deploy prod job with protectTermination command.
+The same is done for the complete cloudformation stack in the CircleCi deploy prod job with the protectTermination command.
 The protectTermination command is also implemented in our deploy chain plugin.
 
 ```
@@ -304,7 +304,7 @@ The protectTermination command is also implemented in our deploy chain plugin.
 
 ### Domain registration 
 For registering subdomains for the different stacks we use the [serverless-domain-manager](https://www.npmjs.com/package/serverless-domain-manager) plugin.
-If you don't have a domain in your AWS account you can simply delete this plugin from the servless.yml file. If you use the CircleCI template remove this command "serverless create_domain" from the Deploy Jobs.
+If you don't have a domain in your AWS account you can simply delete this plugin from the servless.yml file. If you use the CircleCI template remove this command "serverless create_domain" from the deploy Jobs.
 
 ### Smoke Test 
 To test the deployed infrastructure, e.g. if the Lambda function has access to the internet or the Storage S3 Bucket does not allow public access, we wrote a SmokeTestController. This is checked in a CircleCi job.

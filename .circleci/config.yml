@@ -12,6 +12,7 @@ jobs:
         name: Define stage name
         command: |
           echo "export STAGE=$(echo $CIRCLE_BRANCH | cut -c1-11 | sed -e 's/\//-/g')" >> $BASH_ENV
+          source $BASH_ENV
           echo "export STAGE=$STAGE" >> envVars
           echo "STAGE: $STAGE"
     - run:
