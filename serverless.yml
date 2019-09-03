@@ -69,7 +69,7 @@ custom:
 
   customDomain:
     domainName: ${self:custom.customDomain.switch.${opt:stage, self:provider.stage}.domainName , '${self:custom.customDomain.swicth.default.domainName}'}
-    swicth:
+    switch:
       baseDomain: techdev2.exporo.de
       default:
         domainName: ${opt:stage, self:provider.stage}.${self:custom.customDomain.switch.baseDomain}
