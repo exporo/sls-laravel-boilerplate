@@ -105,7 +105,7 @@ class DeployChain {
         const instances = JSON.parse(this.exec("aws rds describe-db-clusters --max-items 200 " + this.setRegionArgument() + this.setProfileArgument()));
 
         instances.DBClusters.forEach(item => {
-            if (item.Status === 'available') {
+            if (item.Status === 'available' && item.Endpoint.substring(0, this.getConfig().uuid.length) === this.getConfig().uuid) {
                 IP = item.Endpoint;
             }
         });
