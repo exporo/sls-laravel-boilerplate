@@ -70,6 +70,7 @@ In some places this project is still a bit raw, because it is still quite new, s
 * AWS CLI
 * Serverless Framework
 * An AWS Account 
+* A domain hosted in your AWS Account (If you don't have one read the section **Domain registration**) 
 
 ## Installation
 <a name="installation"/>
