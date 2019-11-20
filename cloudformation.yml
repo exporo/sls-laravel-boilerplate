@@ -1,0 +1,334 @@
+Resources:
+  #Laravel Application Key
+  AppKey:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: ${self:custom.UUID}-APP_KEY
+      GenerateSecretString:
+        IncludeSpace: false
+        PasswordLength: 32
+        ExcludeCharacters: '"@/\'
+
+  #SQS queue
+  SQSQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      VisibilityTimeout: 120
+      QueueName: ${self:custom.UUID}
+
+  #Aurora MySql 5.6 serverless DB
+  AuroraSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: "Aurora Subnet Group"
+      Tags:
+      - Key: Name
+        Value: ${self:custom.UUID}
+      SubnetIds:
+      - Ref: ServerlessSubnetA
+      - Ref: ServerlessSubnetB
+      - Ref: ServerlessSubnetC
+
+  DBSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: ${self:custom.UUID}-DB_PASSWORD
+      GenerateSecretString:
+        PasswordLength: 30
+        ExcludeCharacters: '"@/\'
+
+  AuroraRDSCluster:
+    DependsOn: DBSecret
+    UpdateReplacePolicy: Snapshot
+    Type: "AWS::RDS::DBCluster"
+    Properties:
+      MasterUsername: forge
+      MasterUserPassword: !Sub "{{resolve:secretsmanager:${self:custom.UUID}-DB_PASSWORD}}"
+      DBSubnetGroupName:
+        Ref: AuroraSubnetGroup
+      Engine: aurora
+      EngineMode: serverless
+      EngineVersion: "5.6"
+      DeletionProtection: ${self:custom.AURORA.DELETE_PROTECTION}
+      DatabaseName: forge
+      BackupRetentionPeriod: 30
+      ScalingConfiguration:
+        MinCapacity: ${self:custom.AURORA.MIN_CAPACITY}
+        MaxCapacity: ${self:custom.AURORA.MAX_CAPACITY}
+        AutoPause: ${self:custom.AURORA.AUTO_PAUSE}
+        SecondsUntilAutoPause: ${self:custom.AURORA.AUTO_PAUSE_SECONDS}
+      VpcSecurityGroupIds:
+      - Fn::GetAtt: ServerlessVPC.DefaultSecurityGroup
+      Tags:
+      - Key: Name
+        Value: ${self:custom.UUID}
+
+  #DynamoDB Cache
+  DynamoDB:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: ${self:custom.UUID}
+      AttributeDefinitions:
+      - AttributeName: key
+        AttributeType: S
+      KeySchema:
+      - AttributeName: key
+        KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+
+  #Bastion host for accessing DB
+  BastionHost:
+    Type: AWS::EC2::Instance
+    Properties:
+      DisableApiTermination: false
+      KeyName: ${self:custom.UUID}
+      ImageId: ami-0097b5eb
+      InstanceType: t2.nano
+      Monitoring: false
+      SourceDestCheck: false
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          yum -y update
+          yum install mysql --assumeyes
+      Tags:
+      - Key: Name
+        Value: ${self:custom.UUID}
+      NetworkInterfaces:
+      - SubnetId:
+          Ref: ServerlessSubnetP
+        AssociatePublicIpAddress: 'true'
+        DeviceIndex: '0'
+        GroupSet:
+        - Fn::GetAtt: ServerlessVPC.DefaultSecurityGroup
+
+  #S3 Storage Bucket
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      AccessControl: Private
+      BucketName: "${self:custom.UUID}"
+
+  #S3 Public Assets Bucket
+  S3PublicAssetsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: PublicRead
+      BucketName: "${self:custom.UUID}-assets"
+      WebsiteConfiguration:
+        IndexDocument: index.html
+
+  S3PublicAssetsBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    DependsOn: S3PublicAssetsBucket
+    Properties:
+      Bucket:
+        Ref: S3PublicAssetsBucket
+      PolicyDocument:
+        Statement:
+        - Sid: PublicReadGetObject
+          Effect: Allow
+          Principal: "*"
+          Action:
+          - s3:GetObject
+          Resource:
+            Fn::Join: [
+              "", [
+              "arn:aws:s3:::",
+              {
+                "Ref": "S3PublicAssetsBucket"
+              },
+              "/*"
+            ]
+            ]
+
+  # VPC config
+  ServerlessVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: ${self:custom.VPC_CIDR}.0.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      InstanceTenancy: default
+      Tags:
+      - Key: Name
+        Value: ${self:custom.UUID}
+
+  ServerlessDefaultSG:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId:
+        Fn::GetAtt:
+        - ServerlessVPC
+        - DefaultSecurityGroup
+      IpProtocol: tcp
+      FromPort: '22'
+      ToPort: '22'
+      CidrIp: ${self:custom.OFFICE_IP}
+
+  ServerlessSubnetA:
+    DependsOn: ServerlessVPC
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: ServerlessVPC
+      AvailabilityZone: ${self:provider.region}a
+      CidrBlock: ${self:custom.VPC_CIDR}.0.0.0/24
+      Tags:
+      - Key: Name
+        Value: ${self:custom.UUID}-a
+  ServerlessSubnetB:
+    DependsOn: ServerlessVPC
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: ServerlessVPC
+      AvailabilityZone: ${self:provider.region}b
+      CidrBlock: ${self:custom.VPC_CIDR}.0.1.0/24
+      Tags:
+      - Key: Name
+        Value: ${self:custom.UUID}-b
+  ServerlessSubnetC:
+    DependsOn: ServerlessVPC
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: ServerlessVPC
+      AvailabilityZone: ${self:provider.region}c
+      CidrBlock: ${self:custom.VPC_CIDR}.0.2.0/24
+      Tags:
+      - Key: Name
+        Value: ${self:custom.UUID}-c
+  ServerlessSubnetP:
+    DependsOn: ServerlessVPC
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: ServerlessVPC
+      MapPublicIpOnLaunch: true
+      AvailabilityZone: ${self:provider.region}c
+      CidrBlock: ${self:custom.VPC_CIDR}.0.3.0/24
+      Tags:
+      - Key: Name
+        Value: ${self:custom.UUID}-public
+
+  DynamoDBEndpoint:
+    Type: "AWS::EC2::VPCEndpoint"
+    Properties:
+      RouteTableIds:
+      - !Ref ServerlessRTB
+      ServiceName:
+        !Sub "com.amazonaws.#{AWS::Region}.dynamodb"
+      VpcId: !Ref ServerlessVPC
+
+  S3Endpoint:
+    Type: "AWS::EC2::VPCEndpoint"
+    Properties:
+      RouteTableIds:
+      - !Ref ServerlessRTB
+      ServiceName:
+        !Sub "com.amazonaws.#{AWS::Region}.s3"
+      VpcId: !Ref ServerlessVPC
+
+  # To save costs, traffic will be routed through the Nat instance instead of through an AWS Private Link VPC Interface endpoint.
+  # We have to keep an eye on the performance of the Nat instance or reactivate the endpoint in case of strong SQS usage.
+  #
+  #  SQSEndpoint:
+  #    Type: "AWS::EC2::VPCEndpoint"
+  #    Properties:
+  #      VpcEndpointType: Interface
+  #      PrivateDnsEnabled: true
+  #      SubnetIds:
+  #      - Ref: ServerlessSubnetA
+  #      - Ref: ServerlessSubnetB
+  #      - Ref: ServerlessSubnetC
+  #      SecurityGroupIds:
+  #      - Fn::GetAtt: ServerlessVPC.DefaultSecurityGroup
+  #      ServiceName:
+  #        !Sub "com.amazonaws.#{AWS::Region}.sqs"
+  #      VpcId: !Ref ServerlessVPC
+
+
+  ServerlessIGW:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+      - Key: Name
+        Value: ${self:custom.UUID}
+
+  ServerlessGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId:
+        Ref: ServerlessVPC
+      InternetGatewayId:
+        Ref: ServerlessIGW
+
+  ServerlessRTB:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: ServerlessVPC
+      Tags:
+      - Key: Name
+        Value: ${self:custom.UUID}
+
+  ServerlessPublicRTB:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: ServerlessVPC
+      Tags:
+      - Key: Name
+        Value: ${self:custom.UUID}-public
+
+  ServerlessRoutePublic:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId:
+        Ref: ServerlessIGW
+      RouteTableId:
+        Ref: ServerlessPublicRTB
+
+  ServerlessRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      InstanceId:
+        Ref: BastionHost
+      RouteTableId:
+        Ref: ServerlessRTB
+
+  ServerlessSubnetRTAA:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: ServerlessRTB
+      SubnetId:
+        Ref: ServerlessSubnetA
+
+  ServerlessSubnetRTAB:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: ServerlessRTB
+      SubnetId:
+        Ref: ServerlessSubnetB
+
+  ServerlessSubnetRTAC:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: ServerlessRTB
+      SubnetId:
+        Ref: ServerlessSubnetC
+
+  ServerlessSubnetRTAP:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: ServerlessPublicRTB
+      SubnetId:
+        Ref: ServerlessSubnetP
