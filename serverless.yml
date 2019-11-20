@@ -356,20 +356,24 @@ resources:
           !Sub "com.amazonaws.#{AWS::Region}.s3"
         VpcId: !Ref ServerlessVPC
 
-    SQSEndpoint:
-      Type: "AWS::EC2::VPCEndpoint"
-      Properties:
-        VpcEndpointType: Interface
-        PrivateDnsEnabled: true
-        SubnetIds:
-        - Ref: ServerlessSubnetA
-        - Ref: ServerlessSubnetB
-        - Ref: ServerlessSubnetC
-        SecurityGroupIds:
-        - Fn::GetAtt: ServerlessVPC.DefaultSecurityGroup
-        ServiceName:
-          !Sub "com.amazonaws.#{AWS::Region}.sqs"
-        VpcId: !Ref ServerlessVPC
+# To save costs, traffic will be routed through the Nat instance instead of through an AWS Private Link VPC Interface endpoint.
+# We have to keep an eye on the performance of the Nat instance or reactivate the endpoint in case of strong SQS usage.
+#
+#  SQSEndpoint:
+#    Type: "AWS::EC2::VPCEndpoint"
+#    Properties:
+#      VpcEndpointType: Interface
+#      PrivateDnsEnabled: true
+#      SubnetIds:
+#      - Ref: ServerlessSubnetA
+#      - Ref: ServerlessSubnetB
+#      - Ref: ServerlessSubnetC
+#      SecurityGroupIds:
+#      - Fn::GetAtt: ServerlessVPC.DefaultSecurityGroup
+#      ServiceName:
+#        !Sub "com.amazonaws.#{AWS::Region}.sqs"
+#      VpcId: !Ref ServerlessVPC
+
 
     ServerlessIGW:
       Type: AWS::EC2::InternetGateway
